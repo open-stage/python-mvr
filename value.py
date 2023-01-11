@@ -51,18 +51,18 @@ class Rotation:
 class Matrix:
     def __init__(self, str_repr):
         if str_repr == "0" or str_repr == 0:
-            self.matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]
+            self.matrix = [[1, 0, 0,0], [0, 1, 0,0], [0, 0, 1,0], [0, 0, 0,0]]
         else:
             str_repr = str_repr.replace("}{", ",")
             str_repr = str_repr.replace("{", "")
             str_repr = str_repr.replace("}", "")
             component = str_repr.split(",")
-            component = [float(i) for i in component]
+            component = [float(i)*0.001 for i in component]
             self.matrix = [
-                [component[0], component[1], component[2]],
-                [component[3], component[4], component[5]],
-                [component[6], component[7], component[8]],
-                [component[9], component[10], component[11]],
+                [component[0], component[1], component[2],0],
+                [component[3], component[4], component[5],0],
+                [component[6], component[7], component[8],0],
+                [component[9], component[10], component[11],0],
             ]
 
 
