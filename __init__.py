@@ -63,7 +63,7 @@ class Fixture(BaseNode):
         cast_shadow: bool = False,
         addresses: List["Address"] = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.name = name
         self.uuid = uuid
@@ -107,7 +107,7 @@ class Layer(BaseNode):
         fixtures: List["Fixture"] = None,
         matrix: Matrix = Matrix(0),
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.name = name
         self.uuid = uuid
@@ -133,12 +133,28 @@ class Layer(BaseNode):
 
 
 class Address(BaseNode):
-    def __init__(self, dmx_break: int = 0, address: int = 0, *args, **kwargs):
+    def __init__(
+        self, dmx_break: int = 0, universe: int = 1, address: int = 1, *args, **kwargs
+    ):
         self.dmx_break = dmx_break
         self.address = address
+        self.universe = universe
 
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.dmx_break = int(xml_node.attrib.get("break"))
-        self.address = int(xml_node.text)
+        raw_address = xml_node.text
+        if "." in raw_address:
+            universe, address = raw_address.split(".")
+            self.universe = int(universe)
+            self.address = int(address)
+            return
+        self.universe = 1 + int(raw_address) // 512
+        self.address = int(raw_address) % 512
+
+    def __repr__(self):
+        return f"B: {self.dmx_break}, U: {self.universe}, A: {self.address}"
+
+    def __str__(self):
+        return f"B: {self.dmx_break}, U: {self.universe}, A: {self.address}"
