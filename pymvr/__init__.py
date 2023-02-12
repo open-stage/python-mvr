@@ -6,9 +6,6 @@ from pymvr.value import *
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
-    """Given a GDTF zip archive, find the FixtureType of the corresponding
-    description.xml file."""
-
     with pkg.open("GeneralSceneDescription.xml", "r") as f:
         description_str = f.read()
     return ElementTree.fromstring(description_str)
