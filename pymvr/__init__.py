@@ -95,10 +95,12 @@ class Fixture(BaseNode):
         self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
         self.fixture_id = xml_node.find("FixtureID").text
         self.unit_number = xml_node.find("UnitNumber").text
-        self.fixture_type_id = xml_node.find("FixtureTypeId").text
-        self.custom_id = xml_node.find("CustomId").text
-        self.color = xml_node.find("Color").text
-        self.cast_shadow = xml_node.find("CastShadow").text
+        self.fixture_type_id = int(xml_node.find("FixtureTypeId").text)
+        self.custom_id = int(xml_node.find("CustomId").text)
+        self.color = ColorCIE(str_repr=xml_node.find('Color').text)
+
+
+        self.cast_shadow = bool(xml_node.find("CastShadow").text)
         self.addresses = [
             Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")
         ]
