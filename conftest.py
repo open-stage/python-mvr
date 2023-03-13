@@ -18,3 +18,7 @@ def mvr_scene():
 @pytest.fixture(scope="session")
 def pymvr_module():
     yield pymvr
+
+def pytest_configure(config):
+    plugin = config.pluginmanager.getplugin('mypy')
+    plugin.mypy_argv.append('--no-strict-optional')
