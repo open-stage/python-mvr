@@ -36,5 +36,24 @@ reference implementation.
 
 ## Development
 
+### Typing
+
+* At this point, the `--no-strict-optional` is needed for mypy tests to pass:
+
+```bash
+mypy pymvr/*py  --pretty  --no-strict-optional
+```
+### Format
+
 - to format, use `black`
+
+### Testing
+
 - to test, use `pytest`
+- to test typing with mypy use 
+
+```bash
+pytest --mypy -m mypy pymvr/*py
+```
+
+
