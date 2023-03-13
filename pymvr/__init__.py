@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 import zipfile
@@ -50,18 +50,18 @@ class BaseNode:
 class Fixture(BaseNode):
     def __init__(
         self,
-        name: str = None,
-        uuid: str = None,
-        gdtf_spec: str = None,
-        gdtf_mode: str = None,
+        name: Union[str, None] = None,
+        uuid: Union[str, None] = None,
+        gdtf_spec: Union[str, None] = None,
+        gdtf_mode: Union[str, None] = None,
         matrix: Matrix = Matrix(0),
-        fixture_id: str = None,
-        unit_number: str = None,
+        fixture_id: Union[str, None] = None,
+        unit_number: Union[str, None] = None,
         fixture_type_id: int = 0,
         custom_id: int = 0,
-        color: "ColorCIE" = None,
+        color: Union["ColorCIE", None] = None,
         cast_shadow: bool = False,
-        addresses: List["Address"] = None,
+        addresses: List["Address"] = [],
         *args,
         **kwargs,
     ):
@@ -95,8 +95,8 @@ class Fixture(BaseNode):
         self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
         self.fixture_id = xml_node.find("FixtureID").text
         self.unit_number = xml_node.find("UnitNumber").text
-        self.fixture_type_id = int(xml_node.find("FixtureTypeId").text)
-        self.custom_id = int(xml_node.find("CustomId").text)
+        self.fixture_type_id = int(xml_node.find("FixtureTypeId").text or 0)
+        self.custom_id = int(xml_node.find("CustomId").text or 0)
         self.color = ColorCIE(str_repr=xml_node.find('Color').text)
 
 
@@ -112,10 +112,10 @@ class Fixture(BaseNode):
 class GroupObject(BaseNode):
     def __init__(
         self,
-        name: str = None,
-        uuid: str = None,
-        classing: str = None,
-        child_list: "ChildList" = None,
+        name: Union[str, None] = None,
+        uuid: Union [str, None] = None,
+        classing: Union [str, None] = None,
+        child_list: Union["ChildList", None] = None,
         matrix: Matrix = Matrix(0),
         *args,
         **kwargs,
@@ -145,8 +145,8 @@ class GroupObject(BaseNode):
 class ChildList(BaseNode):
     def __init__(
         self,
-        fixtures: List["Fixture"] = None,
-        group_object: "GroupObject" = None,
+        fixtures: List["Fixture"] = [],
+        group_object: Union["GroupObject", None] = None,
         *args,
         **kwargs,
     ):
@@ -165,12 +165,12 @@ class ChildList(BaseNode):
 class Layer(BaseNode):
     def __init__(
         self,
-        name: str = None,
-        uuid: str = None,
-        gdtf_spec: str = None,
-        gdtf_mode: str = None,
+        name: Union[str, None] = None,
+        uuid: Union[str, None] = None,
+        gdtf_spec: Union[str, None] = None,
+        gdtf_mode: Union[str, None] = None,
         matrix: Matrix = Matrix(0),
-        child_list: ChildList = None,
+        child_list: Union['ChildList', None] = None,
         *args,
         **kwargs,
     ):
@@ -192,13 +192,13 @@ class Layer(BaseNode):
             if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
                 if self.gdtf_spec[-5:].lower() != ".gdtf":
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        _gdtf_mode = xml_node.find("GDTFMode")
+        _gdtf_mode: Optional['Element'] = xml_node.find("GDTFMode")
         if _gdtf_mode is not None:
             self.gdtf_mode = _gdtf_mode.text
 
-        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+        self.child_list = ChildList(xml_node = xml_node.find("ChildList"))
         if xml_node.find("Matrix"):
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+            self.matrix = Matrix(str_repr = xml_node.find("Matrix").text)
 
     def __str__(self):
         return f"{self.name}"
@@ -206,7 +206,7 @@ class Layer(BaseNode):
 
 class Address(BaseNode):
     def __init__(
-        self, dmx_break: int = 0, universe: int = 1, address: int = 1, *args, **kwargs
+        self, dmx_break: int = 0, universe: int = 1, address: Union[int, str] = 1, *args, **kwargs
     ):
         self.dmx_break = dmx_break
         self.address = address
@@ -214,8 +214,8 @@ class Address(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.dmx_break = int(xml_node.attrib.get("break"))
-        raw_address = xml_node.text
+        self.dmx_break = int(xml_node.attrib.get("break", 0))
+        raw_address = xml_node.text or "0"
         if "." in raw_address:
             universe, address = raw_address.split(".")
             self.universe = int(universe)

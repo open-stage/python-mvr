@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import List
+from typing import List, Union
 
 
 # Data type that only allows a specific set of values, if given a value
@@ -24,7 +24,7 @@ class Enum:
 
 class ColorCIE:
     def __init__(
-        self, x: float = None, y: float = None, z: float = None, str_repr: str = None
+        self, x: Union[float, None] = None, y: Union[float, None] = None, z: Union[float, None] = None, str_repr: Union[str, None] = None
     ):
         self.x = x
         self.y = y
