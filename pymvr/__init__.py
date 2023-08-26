@@ -95,12 +95,19 @@ class Fixture(BaseNode):
         self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
         self.fixture_id = xml_node.find("FixtureID").text
         self.unit_number = xml_node.find("UnitNumber").text
-        self.fixture_type_id = int(xml_node.find("FixtureTypeId").text or 0)
-        self.custom_id = int(xml_node.find("CustomId").text or 0)
-        self.color = ColorCIE(str_repr=xml_node.find('Color').text)
+        fixture_type_id_node = xml_node.find("FixtureTypeId")
+        if fixture_type_id_node:
+            self.fixture_type_id = int(fixture_type_id_node.text or 0)
+        custom_id_node = xml_node.find("CustomId")
+        if custom_id_node:
+            self.custom_id = int(custom_id_node.text or 0)
+        color_node = xml_node.find("Color")
+        if color_node:
+            self.color = ColorCIE(str_repr=color_node.text)
 
-
-        self.cast_shadow = bool(xml_node.find("CastShadow").text)
+        cast_shadow_node = xml_node.find("CastShadow")
+        if cast_shadow_node:
+            self.cast_shadow = bool(cast_shadow_node.text)
         self.addresses = [
             Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")
         ]
@@ -113,8 +120,8 @@ class GroupObject(BaseNode):
     def __init__(
         self,
         name: Union[str, None] = None,
-        uuid: Union [str, None] = None,
-        classing: Union [str, None] = None,
+        uuid: Union[str, None] = None,
+        classing: Union[str, None] = None,
         child_list: Union["ChildList", None] = None,
         matrix: Matrix = Matrix(0),
         *args,
@@ -170,7 +177,7 @@ class Layer(BaseNode):
         gdtf_spec: Union[str, None] = None,
         gdtf_mode: Union[str, None] = None,
         matrix: Matrix = Matrix(0),
-        child_list: Union['ChildList', None] = None,
+        child_list: Union["ChildList", None] = None,
         *args,
         **kwargs,
     ):
@@ -192,13 +199,13 @@ class Layer(BaseNode):
             if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
                 if self.gdtf_spec[-5:].lower() != ".gdtf":
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        _gdtf_mode: Optional['Element'] = xml_node.find("GDTFMode")
+        _gdtf_mode: Optional["Element"] = xml_node.find("GDTFMode")
         if _gdtf_mode is not None:
             self.gdtf_mode = _gdtf_mode.text
 
-        self.child_list = ChildList(xml_node = xml_node.find("ChildList"))
+        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
         if xml_node.find("Matrix"):
-            self.matrix = Matrix(str_repr = xml_node.find("Matrix").text)
+            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
 
     def __str__(self):
         return f"{self.name}"
@@ -206,7 +213,12 @@ class Layer(BaseNode):
 
 class Address(BaseNode):
     def __init__(
-        self, dmx_break: int = 0, universe: int = 1, address: Union[int, str] = 1, *args, **kwargs
+        self,
+        dmx_break: int = 0,
+        universe: int = 1,
+        address: Union[int, str] = 1,
+        *args,
+        **kwargs,
     ):
         self.dmx_break = dmx_break
         self.address = address
