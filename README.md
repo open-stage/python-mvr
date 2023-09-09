@@ -28,11 +28,12 @@ reference implementation.
 
 ## Status
 
-- This is a very early version, currently implemented:
+- Currently implemented:
     - Fixture
     - Layer
     - ChildList
     - GroupObject
+    - FocusPoint
 
 ## Development
 
