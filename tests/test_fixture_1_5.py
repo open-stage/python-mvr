@@ -1,3 +1,6 @@
+import pytest
+
+@pytest.mark.parametrize("mvr_scene", [("basic_fixture.mvr",)], indirect=True)
 def test_version(mvr_scene):
     """MVR version should be 1.5"""
 
@@ -23,6 +26,7 @@ def process_mvr_fixture(fixture):
     assert fixture.matrix.matrix[3] == [5.0, 5.0, 5.0, 0]
 
 
+@pytest.mark.parametrize("mvr_scene", [("basic_fixture.mvr",)], indirect=True)
 def test_fixture(mvr_scene):
     for layer in mvr_scene.layers:
         process_mvr_child_list(layer.child_list, mvr_scene)
