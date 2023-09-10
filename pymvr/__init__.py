@@ -60,34 +60,67 @@ class Fixture(BaseNode):
         self,
         name: Union[str, None] = None,
         uuid: Union[str, None] = None,
+        multipatch: Union[str, None] = None,
         gdtf_spec: Union[str, None] = None,
         gdtf_mode: Union[str, None] = None,
         focus: Union[str, None] = None,
         matrix: Matrix = Matrix(0),
+        classing: Union[str, None] = None,
         fixture_id: Union[str, None] = None,
-        unit_number: Union[str, None] = None,
+        fixture_id_numeric: Union[int, None] = None,
+        unit_number: Union[int, None] = None,
         fixture_type_id: int = 0,
         custom_id: int = 0,
+        custom_id_type: int = 0,
         color: Union["ColorCIE", None] = None,
         cast_shadow: bool = False,
+        dmx_invert_pan: bool = False,
+        dmx_invert_tilt: bool = False,
+        position: Union[str, None] = None,
+        function_: Union[str, None] = None,
+        child_position: Union[str, None] = None,
         addresses: List["Address"] = [],
+        protocols: List["Protocol"] = [],
+        alignments: List["Alignment"] = [],
+        custom_commands: List["CustomCommand"] = [],
+        overwrites: List["Overwrite"] = [],
+        connections: List["Connection"] = [],
+        mappings: List["Mapping"] = [],
+        gobo: Union["Gobo", None] = None,
+        child_list: Union["ChildList", None] = None,
         *args,
         **kwargs,
     ):
         self.name = name
         self.uuid = uuid
+        self.multipatch = multipatch
         self.gdtf_spec = gdtf_spec
         self.gdtf_mode = gdtf_mode
         self.focus = focus
         self.matrix = matrix
+        self.classing = classing
         self.fixture_id = fixture_id
+        self.fixture_id_numeric = fixture_id_numeric
         self.unit_number = unit_number
         self.fixture_type_id = fixture_type_id
         self.custom_id = custom_id
+        self.custom_id_type = custom_id_type
         self.color = color
         self.cast_shadow = cast_shadow
+        self.dmx_invert_pan = dmx_invert_pan
+        self.dmx_invert_tilt = dmx_invert_tilt
+        self.position = position
+        self.function_ = function_
+        self.child_position = child_position
         self.addresses = addresses
-
+        self.protocols = protocols
+        self.alignments = alignments
+        self.custom_commands = custom_commands
+        self.overwrites = overwrites
+        self.connections = connections
+        self.mappings = mappings
+        self.gobo = gobo
+        self.child_list = child_list
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -99,33 +132,75 @@ class Fixture(BaseNode):
             if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
                 if self.gdtf_spec[-5:].lower() != ".gdtf":
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        _gdtf_mode = xml_node.find("GDTFMode")
-        if _gdtf_mode is not None:
-            self.gdtf_mode = _gdtf_mode.text
-        _focus = xml_node.find("Focus")
-        if _focus is not None:
-            self.focus = _focus.text
+        if xml_node.find("GDTFMode") is not None:
+            self.gdtf_mode = xml_node.find("GDTFMode").text
+
+        if xml_node.find("Focus") is not None:
+            self.focus = xml_node.find("Focus").text
+
         self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
         self.fixture_id = xml_node.find("FixtureID").text
-        self.unit_number = xml_node.find("UnitNumber").text
-        fixture_type_id_node = xml_node.find("FixtureTypeId")
-        if fixture_type_id_node is not None:
-            self.fixture_type_id = int(fixture_type_id_node.text or 0)
-        custom_id_node = xml_node.find("CustomId")
-        if custom_id_node is not None:
-            self.custom_id = int(custom_id_node.text or 0)
-        color_node = xml_node.find("Color")
-        if color_node is not None:
-            self.color = ColorCIE(str_repr=color_node.text)
+
+        if xml_node.find("FixtureIDNumeric"):
+            self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
+        self.unit_number = int(xml_node.find("UnitNumber").text)
+
+        if xml_node.find("FixtureTypeId") is not None:
+            self.fixture_type_id = int(xml_node.find("FixtureTypeId").text or 0)
+
+        if xml_node.find("CustomId") is not None:
+            self.custom_id = int(xml_node.find("CustomId").text or 0)
+
+        if xml_node.find("CustomIdType") is not None:
+            self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
+
+        if xml_node.find("Color") is not None:
+            self.color = ColorCIE(str_repr=xml_node.find("Color").text)
         else:
             self.color = ColorCIE()
 
-        cast_shadow_node = xml_node.find("CastShadow")
-        if cast_shadow_node is not None:
-            self.cast_shadow = bool(cast_shadow_node.text)
+        if xml_node.find("CastShadow") is not None:
+            self.cast_shadow = bool(xml_node.find("CastShadow").text)
+
         self.addresses = [
             Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")
         ]
+
+        if xml_node.find("Protocols"):
+            self.protocols = [
+                Protocol(xml_node=i)
+                for i in xml_node.find("Protocols").findall("Protocol")
+            ]
+        if xml_node.find("Alignments"):
+            self.alignments = [
+                Alignment(xml_node=i)
+                for i in xml_node.find("Alignments").findall("Alignment")
+            ]
+        if xml_node.find("Connections"):
+            self.connections = [
+                Connection(xml_node=i)
+                for i in xml_node.find("Connections").findall("Connection")
+            ]
+        if xml_node.find("Mappings"):
+            self.mappings = [
+                Mapping(xml_node=i)
+                for i in xml_node.find("Mappings").findall("Mapping")
+            ]
+        if xml_node.find("Gobo") is not None:
+            self.gobo = Gobo(xml_node.attrib.get("Gobo"))
+
+        self.custom_commands = [
+            CustomCommand(xml_node=i)
+            for i in xml_node.find("CustomCommands").findall("CustomCommand")
+        ]
+        if xml_node.find("Overwrites"):
+            self.overwrites = [
+                Overwrite(xml_node=i)
+                for i in xml_node.find("Overwrites").findall("Overwrite")
+            ]
+        if xml_node.find("Classing") is not None:
+            self.classing = xml_node.find("Classing").text
+        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
 
     def __str__(self):
         return f"{self.name}"
@@ -155,7 +230,6 @@ class GroupObject(BaseNode):
         self.uuid = xml_node.attrib.get("uuid")
         if _classing := xml_node.find("Classing"):
             self.classing = _classing.text
-
         self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
         if xml_node.find("Matrix") is not None:
             self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
@@ -170,6 +244,7 @@ class ChildList(BaseNode):
         fixtures: List["Fixture"] = [],
         focus_points: List["FocusPoint"] = [],
         group_object: Union["GroupObject", None] = None,
+        scene_objects: List["SceneObject"] = [],
         *args,
         **kwargs,
     ):
@@ -177,10 +252,17 @@ class ChildList(BaseNode):
             self.fixtures = fixtures
         else:
             self.fixtures = []
+
         if focus_points is not None:
             self.focus_points = focus_points
         else:
             self.focus_points = []
+
+        if scene_objects is not None:
+            self.scene_objects = scene_objects
+        else:
+            self.scene_objects = []
+
         self.group_object = group_object
         super().__init__(*args, **kwargs)
 
@@ -190,6 +272,9 @@ class ChildList(BaseNode):
             FocusPoint(xml_node=i) for i in xml_node.findall("FocusPoint")
         ]
         self.group_object = GroupObject(xml_node=xml_node.find("GroupObject"))
+        self.scene_objects = [
+            SceneObject(xml_node=i) for i in xml_node.findall("SceneObject")
+        ]
 
 
 class Layer(BaseNode):
@@ -379,3 +464,291 @@ class FocusPoint(BaseNode):
 
     def __str__(self):
         return f"{self.name}"
+
+
+class SceneObject(BaseNode):
+    def __init__(
+        self,
+        uuid: Union[str, None] = None,
+        name: Union[str, None] = None,
+        multipatch: Union[str, None] = None,
+        matrix: Matrix = Matrix(0),
+        classing: Union[str, None] = None,
+        geometries: "Geometries" = None,
+        gdtf_spec: Union[str, None] = None,
+        gdtf_mode: Union[str, None] = None,
+        addresses: List["Address"] = [],
+        alignments: List["Alignment"] = [],
+        custom_commands: List["CustomCommand"] = [],
+        overwrites: List["Overwrite"] = [],
+        connections: List["Connection"] = [],
+        fixture_id: Union[str, None] = None,
+        fixture_id_numeric: Union[int, None] = None,
+        unit_number: Union[int, None] = None,
+        custom_id: int = 0,
+        custom_id_type: int = 0,
+        child_list: Union["ChildList", None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.uuid = uuid
+        self.name = name
+        self.multipatch = multipatch
+        self.matrix = matrix
+        self.classing = classing
+        self.geometries = geometries
+        self.gdtf_spec = gdtf_spec
+        self.gdtf_mode = gdtf_mode
+        self.addresses = addresses
+        self.alignments = alignments
+        self.custom_commands = custom_commands
+        self.overwrites = overwrites
+        self.connections = connections
+        self.fixture_id = fixture_id
+        self.fixture_id_numeric = fixture_id_numeric
+        self.unit_number = unit_number
+        self.custom_id = custom_id
+        self.custom_id_type = custom_id_type
+        self.child_list = child_list
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.uuid = xml_node.attrib.get("uuid")
+        self.name = xml_node.attrib.get("name")
+        self.multipatch = xml_node.attrib.get("multipatch")
+        if xml_node.find("Matrix") is not None:
+            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+        if xml_node.find("Classing") is not None:
+            self.classing = xml_node.find("Classing").text
+        if xml_node.find("Geometries") is not None:
+            self.geometries = Geometries(xml_node=xml_node.find("Geometries"))
+        _gdtf_spec = xml_node.find("GDTFSpec")
+        if _gdtf_spec is not None:
+            self.gdtf_spec = _gdtf_spec.text
+            if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
+                if self.gdtf_spec[-5:].lower() != ".gdtf":
+                    self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
+        if xml_node.find("GDTFMode") is not None:
+            self.gdtf_mode = xml_node.find("GDTFMode").text
+
+        if _gdtf_spec is not None:
+            self.gdtf_spec = _gdtf_spec.text
+            if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
+                if self.gdtf_spec[-5:].lower() != ".gdtf":
+                    self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
+        if xml_node.find("GDTFMode") is not None:
+            self.gdtf_mode = xml_node.find("GDTFMode").text
+
+        if xml_node.find("Addresses") is not None:
+            self.addresses = [
+                Address(xml_node=i)
+                for i in xml_node.find("Addresses").findall("Address")
+            ]
+
+        if xml_node.find("Alignments") is not None:
+            self.alignments = [
+                Alignment(xml_node=i)
+                for i in xml_node.find("Alignments").findall("Alignment")
+            ]
+
+        if xml_node.find("CustomCommands") is not None:
+            self.custom_commands = [
+                CustomCommand(xml_node=i)
+                for i in xml_node.find("CustomCommands").findall("CustomCommand")
+            ]
+
+        if xml_node.find("Overwrites") is not None:
+            self.overwrites = [
+                Overwrite(xml_node=i)
+                for i in xml_node.find("Overwrites").findall("Overwrite")
+            ]
+
+        if xml_node.find("Connections") is not None:
+            self.connections = [
+                Connection(xml_node=i)
+                for i in xml_node.find("Connections").findall("Connection")
+            ]
+        if xml_node.find("FixtureID"):
+            self.fixture_id = xml_node.find("FixtureID").text
+
+        if xml_node.find("FixtureIDNumeric"):
+            self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
+
+        if xml_node.find("UnitNumber"):
+            self.unit_number = int(xml_node.find("UnitNumber").text)
+
+        if xml_node.find("CustomId") is not None:
+            self.custom_id = int(xml_node.find("CustomId").text or 0)
+
+        if xml_node.find("CustomIdType") is not None:
+            self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
+
+        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class Protocol(BaseNode):
+    def __init__(
+        self,
+        geometry: Union[str, None] = None,
+        name: Union[str, None] = None,
+        type_: Union[str, None] = None,
+        version: Union[str, None] = None,
+        transmission: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.geometry = geometry
+        self.name = name
+        self.type = type_
+        self.version = version
+        self.transmission = transmission
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.geometry = xml_node.attrib.get("geometry")
+        self.name = xml_node.attrib.get("name")
+        self.type = xml_node.attrib.get("type")
+        self.version = xml_node.attrib.get("version")
+        self.transmission = xml_node.attrib.get("transmission")
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class Alignment(BaseNode):
+    def __init__(
+        self,
+        geometry: Union[str, None] = None,
+        up: Union[str, None] = "0,0,1",
+        direction: Union[str, None] = "0,0,-1",
+        *args,
+        **kwargs,
+    ):
+        self.geometry = geometry
+        self.up = up
+        self.direction = direction
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.geometry = xml_node.attrib.get("geometry")
+        self.up = xml_node.attrib.get("up", "0,0,1")
+        self.direction = xml_node.attrib.get("direction", "0,0,-1")
+
+    def __str__(self):
+        return f"{self.geometry}"
+
+
+class Overwrite(BaseNode):
+    def __init__(
+        self,
+        universal: Union[str, None] = None,
+        target: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.universal = universal
+        self.target = target
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.universal = xml_node.attrib.get("universal")
+        self.target = xml_node.attrib.get("target")
+
+    def __str__(self):
+        return f"{self.universal} {self.target}"
+
+
+class Connection(BaseNode):
+    def __init__(
+        self,
+        own: Union[str, None] = None,
+        other: Union[str, None] = None,
+        to_object: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.own = own
+        self.other = other
+        self.to_object = to_object
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.own = xml_node.attrib.get("own")
+        self.other = xml_node.attrib.get("other")
+        self.to_object = xml_node.attrib.get("toObject")
+
+    def __str__(self):
+        return f"{self.own} {self.other}"
+
+
+class Mapping(BaseNode):
+    def __init__(
+        self,
+        link_def: Union[str, None] = None,
+        ux: Union[int, None] = None,
+        uy: Union[int, None] = None,
+        ox: Union[int, None] = None,
+        oy: Union[int, None] = None,
+        rz: Union[int, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.link_def = link_def
+        self.ux = ux
+        self.uy = uy
+        self.ox = ox
+        self.oy = oy
+        self.rz = rz
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.link_def = xml_node.attrib.get("linkedDef")
+        self.ux = int(xml_node.find("ux").text)
+        self.uy = int(xml_node.find("uy").text)
+        self.ox = int(xml_node.find("ox").text)
+        self.oy = int(xml_node.find("oy").text)
+        self.rz = int(xml_node.find("rz").text)
+
+    def __str__(self):
+        return f"{self.link_def}"
+
+
+class Gobo(BaseNode):
+    def __init__(
+        self,
+        rotation: Union[str, float, None] = None,
+        filename: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.rotation = rotation
+        self.filename = filename
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.rotation = float(xml_node.attrib.get("rotation", 0))
+        self.filename = xml_node.text
+
+    def __str__(self):
+        return f"{self.filename} {self.rotation}"
+
+
+class CustomCommand(BaseNode):
+    # TODO: split more: <CustomCommand>Body_Pan,f 50</CustomCommand>
+    def __init__(
+        self,
+        custom_command: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.custom_command = custom_command
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.custom_command = xml_node.text
+
+    def __str__(self):
+        return f"{self.own} {self.other}"

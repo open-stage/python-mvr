@@ -34,6 +34,7 @@ reference implementation.
     - ChildList
     - GroupObject
     - FocusPoint
+    - SceneObject
 
 ## Development
 
