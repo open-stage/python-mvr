@@ -35,14 +35,14 @@ def process_mvr_scene_object(scene_object):
     # test getting focus points
     name = scene_object.name
     uuid = scene_object.uuid
-    print(name, uuid)
+    print("scene object", name, uuid)
 
 
 def process_mvr_focus_point(focus_point):
     # test getting focus points
     name = focus_point.name
     uuid = focus_point.uuid
-    print(name, uuid)
+    print("focus point", name, uuid)
 
 
 def process_classes(mvr_scene):
