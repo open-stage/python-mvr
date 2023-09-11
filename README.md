@@ -35,6 +35,23 @@ reference implementation.
     - GroupObject
     - FocusPoint
     - SceneObject
+    - Support
+    - Truss
+    - VideoScreen
+    - Projector
+    - Address
+    - Class
+    - Geometry3D
+    - Symbol
+    - Geometries
+    - Protocol
+    - Alignment
+    - Overwrite
+    - Connection
+    - Mapping
+    - Gobo
+    - CustomCommand
+    - Sources
 
 ## Development
 

@@ -113,13 +113,15 @@ class BaseChildNode(BaseNode):
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
         if xml_node.find("GDTFMode") is not None:
             self.gdtf_mode = xml_node.find("GDTFMode").text
-
-        self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
-        self.fixture_id = xml_node.find("FixtureID").text
+        if xml_node.find("Matrix") is not None:
+            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+        if xml_node.find("FixtureID") is not None:
+            self.fixture_id = xml_node.find("FixtureID").text
 
         if xml_node.find("FixtureIDNumeric"):
             self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
-        self.unit_number = int(xml_node.find("UnitNumber").text)
+        if xml_node.find("UnitNumber") is not None:
+            self.unit_number = int(xml_node.find("UnitNumber").text)
 
         if xml_node.find("FixtureTypeId") is not None:
             self.fixture_type_id = int(xml_node.find("FixtureTypeId").text or 0)
@@ -133,9 +135,11 @@ class BaseChildNode(BaseNode):
         if xml_node.find("CastShadow") is not None:
             self.cast_shadow = bool(xml_node.find("CastShadow").text)
 
-        self.addresses = [
-            Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")
-        ]
+        if xml_node.find("Addresses") is not None:
+            self.addresses = [
+                Address(xml_node=i)
+                for i in xml_node.find("Addresses").findall("Address")
+            ]
 
         if xml_node.find("Alignments"):
             self.alignments = [
@@ -147,10 +151,11 @@ class BaseChildNode(BaseNode):
                 Connection(xml_node=i)
                 for i in xml_node.find("Connections").findall("Connection")
             ]
-        self.custom_commands = [
-            CustomCommand(xml_node=i)
-            for i in xml_node.find("CustomCommands").findall("CustomCommand")
-        ]
+        if xml_node.find("CustomCommands"):
+            self.custom_commands = [
+                CustomCommand(xml_node=i)
+                for i in xml_node.find("CustomCommands").findall("CustomCommand")
+            ]
         if xml_node.find("Overwrites"):
             self.overwrites = [
                 Overwrite(xml_node=i)
@@ -158,6 +163,30 @@ class BaseChildNode(BaseNode):
             ]
         if xml_node.find("Classing") is not None:
             self.classing = xml_node.find("Classing").text
+
+        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class BaseChildNodeExtended(BaseChildNode):
+    def __init__(
+        self,
+        geometries: "Geometries" = None,
+        child_list: Union["ChildList", None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.geometries = geometries
+        self.child_list = child_list
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        super()._read_xml(xml_node)
+        if xml_node.find("Geometries") is not None:
+            self.geometries = Geometries(xml_node=xml_node.find("Geometries"))
+
         self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
 
     def __str__(self):
@@ -273,29 +302,54 @@ class GroupObject(BaseNode):
 class ChildList(BaseNode):
     def __init__(
         self,
-        fixtures: List["Fixture"] = [],
-        focus_points: List["FocusPoint"] = [],
-        group_object: Union["GroupObject", None] = None,
         scene_objects: List["SceneObject"] = [],
+        group_object: Union["GroupObject", None] = None,
+        focus_points: List["FocusPoint"] = [],
+        fixtures: List["Fixture"] = [],
+        supports: List["Support"] = [],
+        trusses: List["Truss"] = [],
+        video_screens: List["VideoScreen"] = [],
+        projectors: List["Projector"] = [],
         *args,
         **kwargs,
     ):
-        if fixtures is not None:
-            self.fixtures = fixtures
-        else:
-            self.fixtures = []
-
-        if focus_points is not None:
-            self.focus_points = focus_points
-        else:
-            self.focus_points = []
-
         if scene_objects is not None:
             self.scene_objects = scene_objects
         else:
             self.scene_objects = []
 
         self.group_object = group_object
+
+        if focus_points is not None:
+            self.focus_points = focus_points
+        else:
+            self.focus_points = []
+
+        if fixtures is not None:
+            self.fixtures = fixtures
+        else:
+            self.fixtures = []
+
+        if supports is not None:
+            self.supports = supports
+        else:
+            self.supports = []
+
+        if trusses is not None:
+            self.trusses = trusses
+        else:
+            self.trusses = []
+
+        if video_screens is not None:
+            self.video_screens = video_screens
+        else:
+            self.video_screens = []
+
+        if projectors is not None:
+            self.projectors = projectors
+        else:
+            self.projectors = []
+
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -498,25 +552,57 @@ class FocusPoint(BaseNode):
         return f"{self.name}"
 
 
-class SceneObject(BaseChildNode):
+class SceneObject(BaseChildNodeExtended):
+    pass
+
+
+class Truss(BaseChildNodeExtended):
+    pass
+
+
+class Support(BaseChildNodeExtended):
     def __init__(
         self,
-        geometries: "Geometries" = None,
-        child_list: Union["ChildList", None] = None,
+        chain_length: float = 0,
         *args,
         **kwargs,
     ):
-        self.geometries = geometries
-        self.child_list = child_list
+        self.chain_length = chain_length
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        if xml_node.find("Geometries") is not None:
-            self.geometries = Geometries(xml_node=xml_node.find("Geometries"))
-        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+        if xml_node.find("ChainLength") is None:
+            self.chain_length = float(xml_node.find("ChainLength").text or 0)
 
-    def __str__(self):
-        return f"{self.name}"
+
+class VideoScreen(BaseChildNodeExtended):
+    def __init__(
+        self,
+        sources: "Sources" = None,
+        *args,
+        **kwargs,
+    ):
+        self.sources = sources
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        if xml_node.find("Sources") is None:
+            self.sources = Sources(xml_node=xml_node.find("Sources"))
+
+
+class Projector(BaseChildNodeExtended):
+    def __init__(
+        self,
+        projections: "Projections" = None,
+        *args,
+        **kwargs,
+    ):
+        self.projections = projections
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        if xml_node.find("Projections") is None:
+            self.projections = Projections(xml_node.find("Projections"))
 
 
 class Protocol(BaseNode):
@@ -681,4 +767,29 @@ class CustomCommand(BaseNode):
         self.custom_command = xml_node.text
 
     def __str__(self):
-        return f"{self.own} {self.other}"
+        return f"{self.custom_command}"
+
+
+class Projections(BaseNode):
+    ...
+    # todo
+
+
+class Sources(BaseNode):
+    def __init__(
+        self,
+        linked_geometry: Union[str, None] = None,
+        type_: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.linked_geometry = linked_geometry
+        self.type_ = type_
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.linked_geometry = xml_node.attrib.get("linkedGeometry")
+        self.type_ = xml_node.attrib.get("type")
+
+    def __str__(self):
+        return f"{self.linked_geometry} {self.type_}"
