@@ -196,7 +196,9 @@ class Fixture(BaseChildNode):
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
-        self.multipatch = xml_node.attrib.get("multipatch")
+
+        if xml_node.attrib.get("multipatch") is not None:
+            self.multipatch = xml_node.attrib.get("multipatch")
 
         if xml_node.find("Focus") is not None:
             self.focus = xml_node.find("Focus").text
@@ -258,8 +260,8 @@ class GroupObject(BaseNode):
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
         self.uuid = xml_node.attrib.get("uuid")
-        if _classing := xml_node.find("Classing"):
-            self.classing = _classing.text
+        if xml_node.find("Classing") is not None:
+            self.classing = xml_node.find("Classing").text
         self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
         if xml_node.find("Matrix") is not None:
             self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
@@ -496,123 +498,21 @@ class FocusPoint(BaseNode):
         return f"{self.name}"
 
 
-class SceneObject(BaseNode):
+class SceneObject(BaseChildNode):
     def __init__(
         self,
-        uuid: Union[str, None] = None,
-        name: Union[str, None] = None,
-        multipatch: Union[str, None] = None,
-        matrix: Matrix = Matrix(0),
-        classing: Union[str, None] = None,
         geometries: "Geometries" = None,
-        gdtf_spec: Union[str, None] = None,
-        gdtf_mode: Union[str, None] = None,
-        addresses: List["Address"] = [],
-        alignments: List["Alignment"] = [],
-        custom_commands: List["CustomCommand"] = [],
-        overwrites: List["Overwrite"] = [],
-        connections: List["Connection"] = [],
-        fixture_id: Union[str, None] = None,
-        fixture_id_numeric: Union[int, None] = None,
-        unit_number: Union[int, None] = None,
-        custom_id: int = 0,
-        custom_id_type: int = 0,
         child_list: Union["ChildList", None] = None,
         *args,
         **kwargs,
     ):
-        self.uuid = uuid
-        self.name = name
-        self.multipatch = multipatch
-        self.matrix = matrix
-        self.classing = classing
         self.geometries = geometries
-        self.gdtf_spec = gdtf_spec
-        self.gdtf_mode = gdtf_mode
-        self.addresses = addresses
-        self.alignments = alignments
-        self.custom_commands = custom_commands
-        self.overwrites = overwrites
-        self.connections = connections
-        self.fixture_id = fixture_id
-        self.fixture_id_numeric = fixture_id_numeric
-        self.unit_number = unit_number
-        self.custom_id = custom_id
-        self.custom_id_type = custom_id_type
         self.child_list = child_list
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.uuid = xml_node.attrib.get("uuid")
-        self.name = xml_node.attrib.get("name")
-        self.multipatch = xml_node.attrib.get("multipatch")
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
-        if xml_node.find("Classing") is not None:
-            self.classing = xml_node.find("Classing").text
         if xml_node.find("Geometries") is not None:
             self.geometries = Geometries(xml_node=xml_node.find("Geometries"))
-        _gdtf_spec = xml_node.find("GDTFSpec")
-        if _gdtf_spec is not None:
-            self.gdtf_spec = _gdtf_spec.text
-            if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
-                if self.gdtf_spec[-5:].lower() != ".gdtf":
-                    self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        if xml_node.find("GDTFMode") is not None:
-            self.gdtf_mode = xml_node.find("GDTFMode").text
-
-        if _gdtf_spec is not None:
-            self.gdtf_spec = _gdtf_spec.text
-            if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
-                if self.gdtf_spec[-5:].lower() != ".gdtf":
-                    self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        if xml_node.find("GDTFMode") is not None:
-            self.gdtf_mode = xml_node.find("GDTFMode").text
-
-        if xml_node.find("Addresses") is not None:
-            self.addresses = [
-                Address(xml_node=i)
-                for i in xml_node.find("Addresses").findall("Address")
-            ]
-
-        if xml_node.find("Alignments") is not None:
-            self.alignments = [
-                Alignment(xml_node=i)
-                for i in xml_node.find("Alignments").findall("Alignment")
-            ]
-
-        if xml_node.find("CustomCommands") is not None:
-            self.custom_commands = [
-                CustomCommand(xml_node=i)
-                for i in xml_node.find("CustomCommands").findall("CustomCommand")
-            ]
-
-        if xml_node.find("Overwrites") is not None:
-            self.overwrites = [
-                Overwrite(xml_node=i)
-                for i in xml_node.find("Overwrites").findall("Overwrite")
-            ]
-
-        if xml_node.find("Connections") is not None:
-            self.connections = [
-                Connection(xml_node=i)
-                for i in xml_node.find("Connections").findall("Connection")
-            ]
-        if xml_node.find("FixtureID"):
-            self.fixture_id = xml_node.find("FixtureID").text
-
-        if xml_node.find("FixtureIDNumeric"):
-            self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
-
-        if xml_node.find("UnitNumber"):
-            self.unit_number = int(xml_node.find("UnitNumber").text)
-
-        if xml_node.find("CustomId") is not None:
-            self.custom_id = int(xml_node.find("CustomId").text or 0)
-
-        if xml_node.find("CustomIdType") is not None:
-            self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
-
         self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
 
     def __str__(self):
