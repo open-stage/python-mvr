@@ -52,18 +52,17 @@ class BaseNode:
             self._read_xml(xml_node)
 
     def _read_xml(self, xml_node: "Element"):
+        print("base node")
         pass
 
 
-class Fixture(BaseNode):
+class BaseChildNode(BaseNode):
     def __init__(
         self,
         name: Union[str, None] = None,
         uuid: Union[str, None] = None,
-        multipatch: Union[str, None] = None,
         gdtf_spec: Union[str, None] = None,
         gdtf_mode: Union[str, None] = None,
-        focus: Union[str, None] = None,
         matrix: Matrix = Matrix(0),
         classing: Union[str, None] = None,
         fixture_id: Union[str, None] = None,
@@ -72,31 +71,20 @@ class Fixture(BaseNode):
         fixture_type_id: int = 0,
         custom_id: int = 0,
         custom_id_type: int = 0,
-        color: Union["ColorCIE", None] = None,
         cast_shadow: bool = False,
-        dmx_invert_pan: bool = False,
-        dmx_invert_tilt: bool = False,
-        position: Union[str, None] = None,
-        function_: Union[str, None] = None,
-        child_position: Union[str, None] = None,
         addresses: List["Address"] = [],
-        protocols: List["Protocol"] = [],
         alignments: List["Alignment"] = [],
         custom_commands: List["CustomCommand"] = [],
         overwrites: List["Overwrite"] = [],
         connections: List["Connection"] = [],
-        mappings: List["Mapping"] = [],
-        gobo: Union["Gobo", None] = None,
         child_list: Union["ChildList", None] = None,
         *args,
         **kwargs,
     ):
         self.name = name
         self.uuid = uuid
-        self.multipatch = multipatch
         self.gdtf_spec = gdtf_spec
         self.gdtf_mode = gdtf_mode
-        self.focus = focus
         self.matrix = matrix
         self.classing = classing
         self.fixture_id = fixture_id
@@ -105,21 +93,12 @@ class Fixture(BaseNode):
         self.fixture_type_id = fixture_type_id
         self.custom_id = custom_id
         self.custom_id_type = custom_id_type
-        self.color = color
         self.cast_shadow = cast_shadow
-        self.dmx_invert_pan = dmx_invert_pan
-        self.dmx_invert_tilt = dmx_invert_tilt
-        self.position = position
-        self.function_ = function_
-        self.child_position = child_position
         self.addresses = addresses
-        self.protocols = protocols
         self.alignments = alignments
         self.custom_commands = custom_commands
         self.overwrites = overwrites
         self.connections = connections
-        self.mappings = mappings
-        self.gobo = gobo
         self.child_list = child_list
         super().__init__(*args, **kwargs)
 
@@ -134,9 +113,6 @@ class Fixture(BaseNode):
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
         if xml_node.find("GDTFMode") is not None:
             self.gdtf_mode = xml_node.find("GDTFMode").text
-
-        if xml_node.find("Focus") is not None:
-            self.focus = xml_node.find("Focus").text
 
         self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
         self.fixture_id = xml_node.find("FixtureID").text
@@ -154,11 +130,6 @@ class Fixture(BaseNode):
         if xml_node.find("CustomIdType") is not None:
             self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
 
-        if xml_node.find("Color") is not None:
-            self.color = ColorCIE(str_repr=xml_node.find("Color").text)
-        else:
-            self.color = ColorCIE()
-
         if xml_node.find("CastShadow") is not None:
             self.cast_shadow = bool(xml_node.find("CastShadow").text)
 
@@ -166,11 +137,6 @@ class Fixture(BaseNode):
             Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")
         ]
 
-        if xml_node.find("Protocols"):
-            self.protocols = [
-                Protocol(xml_node=i)
-                for i in xml_node.find("Protocols").findall("Protocol")
-            ]
         if xml_node.find("Alignments"):
             self.alignments = [
                 Alignment(xml_node=i)
@@ -181,14 +147,6 @@ class Fixture(BaseNode):
                 Connection(xml_node=i)
                 for i in xml_node.find("Connections").findall("Connection")
             ]
-        if xml_node.find("Mappings"):
-            self.mappings = [
-                Mapping(xml_node=i)
-                for i in xml_node.find("Mappings").findall("Mapping")
-            ]
-        if xml_node.find("Gobo") is not None:
-            self.gobo = Gobo(xml_node.attrib.get("Gobo"))
-
         self.custom_commands = [
             CustomCommand(xml_node=i)
             for i in xml_node.find("CustomCommands").findall("CustomCommand")
@@ -201,6 +159,78 @@ class Fixture(BaseNode):
         if xml_node.find("Classing") is not None:
             self.classing = xml_node.find("Classing").text
         self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class Fixture(BaseChildNode):
+    def __init__(
+        self,
+        multipatch: Union[str, None] = None,
+        focus: Union[str, None] = None,
+        color: Union["ColorCIE", None] = ColorCIE(),
+        dmx_invert_pan: bool = False,
+        dmx_invert_tilt: bool = False,
+        position: Union[str, None] = None,
+        function_: Union[str, None] = None,
+        child_position: Union[str, None] = None,
+        protocols: List["Protocol"] = [],
+        mappings: List["Mapping"] = [],
+        gobo: Union["Gobo", None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.multipatch = multipatch
+        self.focus = focus
+        self.color = color
+        self.dmx_invert_pan = dmx_invert_pan
+        self.dmx_invert_tilt = dmx_invert_tilt
+        self.position = position
+        self.function_ = function_
+        self.child_position = child_position
+        self.protocols = protocols
+        self.mappings = mappings
+        self.gobo = gobo
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        super()._read_xml(xml_node)
+        self.multipatch = xml_node.attrib.get("multipatch")
+
+        if xml_node.find("Focus") is not None:
+            self.focus = xml_node.find("Focus").text
+
+        if xml_node.find("Color") is not None:
+            self.color = ColorCIE(str_repr=xml_node.find("Color").text)
+
+        if xml_node.find("DMXInvertPan") is not None:
+            self.dmx_invert_pan = bool(xml_node.find("DMXInvertPan").text)
+
+        if xml_node.find("DMXInvertTilt") is not None:
+            self.dmx_invert_tilt = bool(xml_node.find("DMXInvertTilt").text)
+
+        if xml_node.find("Position") is not None:
+            self.position = xml_node.find("Position").text
+
+        if xml_node.find("Function") is not None:
+            self.function_ = xml_node.find("Position").text
+
+        if xml_node.find("ChildPosition") is not None:
+            self.child_position = xml_node.find("ChildPosition").text
+
+        if xml_node.find("Protocols"):
+            self.protocols = [
+                Protocol(xml_node=i)
+                for i in xml_node.find("Protocols").findall("Protocol")
+            ]
+        if xml_node.find("Mappings"):
+            self.mappings = [
+                Mapping(xml_node=i)
+                for i in xml_node.find("Mappings").findall("Mapping")
+            ]
+        if xml_node.find("Gobo") is not None:
+            self.gobo = Gobo(xml_node.attrib.get("Gobo"))
 
     def __str__(self):
         return f"{self.name}"
