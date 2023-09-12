@@ -38,12 +38,17 @@ class GeneralSceneDescription:
             self.layers = []
 
         aux_data_collect = self._scene.find("AUXData")
+
         if aux_data_collect:
             self.classes = [
                 Class(xml_node=i) for i in aux_data_collect.findall("Class")
             ]
-        else:
-            self.classes = []
+            self.symdefs = [
+                Symdef(xml_node=i) for i in aux_data_collect.findall("Symdef")
+            ]
+            self.positions = [
+                Position(xml_node=i) for i in aux_data_collect.findall("Position")
+            ]
 
 
 class BaseNode:
@@ -353,14 +358,26 @@ class ChildList(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.fixtures = [Fixture(xml_node=i) for i in xml_node.findall("Fixture")]
-        self.focus_points = [
-            FocusPoint(xml_node=i) for i in xml_node.findall("FocusPoint")
-        ]
-        self.group_object = GroupObject(xml_node=xml_node.find("GroupObject"))
         self.scene_objects = [
             SceneObject(xml_node=i) for i in xml_node.findall("SceneObject")
         ]
+
+        self.group_object = GroupObject(xml_node=xml_node.find("GroupObject"))
+
+        self.focus_points = [
+            FocusPoint(xml_node=i) for i in xml_node.findall("FocusPoint")
+        ]
+
+        self.fixtures = [Fixture(xml_node=i) for i in xml_node.findall("Fixture")]
+
+        self.supports = [Support(xml_node=i) for i in xml_node.findall("Support")]
+        self.trusses = [Truss(xml_node=i) for i in xml_node.findall("Truss")]
+
+        self.video_screens = [
+            VideoScreen(xml_node=i) for i in xml_node.findall("VideoScreen")
+        ]
+
+        self.projectors = [Projector(xml_node=i) for i in xml_node.findall("Projector")]
 
 
 class Layer(BaseNode):
@@ -457,6 +474,61 @@ class Class(BaseNode):
         return f"{self.name}"
 
 
+class Position(BaseNode):
+    def __init__(
+        self,
+        uuid: Union[str, None] = None,
+        name: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.uuid = uuid
+        self.name = name
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.name = xml_node.attrib.get("name")
+        self.uuid = xml_node.attrib.get("uuid")
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class Symdef(BaseNode):
+    def __init__(
+        self,
+        uuid: Union[str, None] = None,
+        name: Union[str, None] = None,
+        geometry3d: List["Geometry3D"] = [],
+        symbol: List["Symbol"] = [],
+        *args,
+        **kwargs,
+    ):
+        self.uuid = uuid
+        self.name = name
+        self.geometry3d = geometry3d
+        self.symbol = symbol
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.name = xml_node.attrib.get("name")
+        self.uuid = xml_node.attrib.get("uuid")
+
+        self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
+        self.geometry3d = [
+            Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")
+        ]
+        if xml_node.find("ChildList"):
+            child_list = xml_node.find("ChildList")
+
+            symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
+            geometry3ds = [
+                Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")
+            ]
+            self.symbol += symbols
+            self.geometry3d += geometry3ds
+
+
 class Geometry3D(BaseNode):
     def __init__(
         self,
@@ -505,8 +577,8 @@ class Symbol(BaseNode):
 class Geometries(BaseNode):
     def __init__(
         self,
-        geometry3d: "Geometry3D" = None,
-        symbol: "Symbol" = None,
+        geometry3d: List["Geometry3D"] = [],
+        symbol: List["Symbol"] = [],
         *args,
         **kwargs,
     ):
@@ -515,8 +587,19 @@ class Geometries(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.geometry3d = Geometry3D(xml_node=xml_node.find("Geometry3D"))
-        self.symbol = Symbol(xml_node=xml_node.find("Symbol"))
+        self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
+        self.geometry3d = [
+            Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")
+        ]
+        if xml_node.find("ChildList"):
+            child_list = xml_node.find("ChildList")
+
+            symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
+            geometry3ds = [
+                Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")
+            ]
+            self.symbol += symbols
+            self.geometry3d += geometry3ds
 
 
 class FocusPoint(BaseNode):

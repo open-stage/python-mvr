@@ -29,29 +29,31 @@ reference implementation.
 ## Status
 
 - Currently implemented:
-    - Fixture
-    - Layer
+    - Address
+    - Alignment
     - ChildList
-    - GroupObject
+    - Class
+    - Connection
+    - CustomCommand
+    - Fixture
     - FocusPoint
+    - Geometries
+    - Geometry3D
+    - Gobo
+    - GroupObject
+    - Layer
+    - Mapping
+    - Overwrite
+    - Position
+    - Projector
+    - Protocol
     - SceneObject
+    - Sources
     - Support
+    - Symbol
+    - Symdef
     - Truss
     - VideoScreen
-    - Projector
-    - Address
-    - Class
-    - Geometry3D
-    - Symbol
-    - Geometries
-    - Protocol
-    - Alignment
-    - Overwrite
-    - Connection
-    - Mapping
-    - Gobo
-    - CustomCommand
-    - Sources
 
 ## Development
 

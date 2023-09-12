@@ -30,11 +30,12 @@ def process_mvr_fixture(fixture):
     assert fixture.gdtf_spec == "Custom@Light Instr Light Source Pendant 44deg.gdtf"
     assert fixture.gdtf_mode == "DMX Mode"
 
-
 def process_mvr_scene_object(scene_object):
     # test getting focus points
     name = scene_object.name
     uuid = scene_object.uuid
+    assert name is not None
+    assert uuid is not None
     print("scene object", name, uuid)
 
 
@@ -42,6 +43,8 @@ def process_mvr_focus_point(focus_point):
     # test getting focus points
     name = focus_point.name
     uuid = focus_point.uuid
+    assert name is not None
+    assert uuid is not None
     print("focus point", name, uuid)
 
 
