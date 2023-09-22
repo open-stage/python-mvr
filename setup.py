@@ -1,14 +1,21 @@
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setup(
-    name='pymvr',
-    version='0.0.1',
-    description='My Virtual Rig library',
-    long_description='Basic library for interfacing with the My Virtual Rig format developed by MA, Robe and '
-                     'Vectorworks. For more information on the format see gdtf-share.com',
-    license='MIT',
-    author='vanous',
-    author_email='noreply@nodomain.com',
-    packages=['pymvr']
+    name="pymvr",
+    version="0.1.0",
+    long_description=long_description,
+    description="My Virtual Rig library for Python",
+    long_description_content_type="text/markdown",
+    url="https://github.com/open-stage/python-mvr",
+    license="MIT",
+    author="vanous",
+    author_email="noreply@nodomain.com",
+    packages=["pymvr"],
+    project_urls={
+        "Source": "https://github.com/open-stage/python-mvr",
+        "Changelog": "https://github.com/open-stage/python-mvr/blob/master/CHANGELOG.md",
+    },
 )

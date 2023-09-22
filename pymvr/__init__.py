@@ -2,7 +2,7 @@ from typing import List, Union, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 import zipfile
-from pymvr.value import *
+from pymvr.value import Matrix, ColorCIE
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -57,7 +57,6 @@ class BaseNode:
             self._read_xml(xml_node)
 
     def _read_xml(self, xml_node: "Element"):
-        print("base node")
         pass
 
 
