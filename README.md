@@ -1,16 +1,28 @@
 # python-mvr
 
-Python library for MVR (My Virtual Rig) which is part of [GDTF (General Device Type Format)](https://gdtf-share.com/)
+Python library for MVR (My Virtual Rig). MVR is part of [GDTF (General Device Type Format)](https://gdtf-share.com/)
 
 MVR specification as per https://gdtf.eu/mvr/prologue/introduction/
 
 See source code for documentation. Naming conventions, in general, are
-identical to that on the GDTF developer wiki, except CamelCase is replaced with
+identical to that on the GDTF, CamelCase is replaced with
 underscore_delimiters.
+
+[Source code](https://github.com/open-stage/python-mvr)
+
+[PyPi page](https://pypi.org/project/pymvr/)
+
+[![Pytest](https://github.com/open-stage/python-mvr/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/run-tests.yaml)
+
+[![Check links in markdown](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml)
 
 ## Installation
 
-To install from git, run pip:
+```bash
+pip install pymvr
+```
+
+To install latest version from git via pip:
 ```python
 python -m pip install https://codeload.github.com/open-stage/python-mvr/zip/refs/heads/master
 ```
@@ -19,7 +31,10 @@ python -m pip install https://codeload.github.com/open-stage/python-mvr/zip/refs
 
 ```python
 import pymvr
-mvr=pymvr.GeneralSceneDescription("mvr_file.mvr")
+mvr_scene = pymvr.GeneralSceneDescription("mvr_file.mvr")
+
+for layer_index, layer in enumerate(mvr_scene.layers):
+    ... #process data
 ```
 
 See [BlenderDMX](https://github.com/open-stage/blender-dmx) and
