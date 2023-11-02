@@ -19,11 +19,12 @@ def process_mvr_child_list(child_list, mvr_scene):
     for scene_object in child_list.scene_objects:
         process_mvr_scene_object(scene_object)
 
-    if child_list.group_object.child_list is not None:
-        process_mvr_child_list(
-            child_list.group_object.child_list,
-            mvr_scene,
-        )
+    for group in child_list.group_objects:
+        if group.child_list is not None:
+            process_mvr_child_list(
+                group.child_list,
+                mvr_scene,
+            )
 
 
 def process_mvr_fixture(fixture):

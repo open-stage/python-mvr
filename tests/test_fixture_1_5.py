@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.parametrize("mvr_scene", [("basic_fixture.mvr",)], indirect=True)
 def test_version(mvr_scene):
     """MVR version should be 1.5"""
@@ -11,11 +12,12 @@ def test_version(mvr_scene):
 def process_mvr_child_list(child_list, mvr_scene):
     for fixture in child_list.fixtures:
         process_mvr_fixture(fixture)
-    if child_list.group_object.child_list is not None:
-        process_mvr_child_list(
-            child_list.group_object.child_list,
-            mvr_scene,
-        )
+    for group in child_list.group_objects:
+        if group.child_list is not None:
+            process_mvr_child_list(
+                group.child_list,
+                mvr_scene,
+            )
 
 
 def process_mvr_fixture(fixture):
