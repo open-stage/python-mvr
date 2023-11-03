@@ -46,10 +46,12 @@ reference implementation.
 - Currently implemented:
     - Address
     - Alignment
+    - AUXData
     - ChildList
     - Class
     - Connection
     - CustomCommand
+    - Data
     - Fixture
     - FocusPoint
     - Geometries
@@ -68,6 +70,7 @@ reference implementation.
     - Symbol
     - Symdef
     - Truss
+    - UserData
     - VideoScreen
 
 ## Development

@@ -50,7 +50,7 @@ def process_mvr_focus_point(focus_point):
 
 
 def process_classes(mvr_scene):
-    class_ = mvr_scene.classes[0]
+    class_ = mvr_scene.aux_data.classes[0]
     assert class_.name == "Site-Cieling"
     assert class_.uuid == "2BD0B4C7-DDE3-4CAE-AA8D-9DDDF096F43E"
 
