@@ -84,7 +84,7 @@ mypy pymvr/*py  --pretty  --no-strict-optional
 ```
 ### Format
 
-- to format, use `black`
+- to format, use `ruff`
 
 ### Testing
 
