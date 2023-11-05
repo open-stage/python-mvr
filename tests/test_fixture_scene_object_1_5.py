@@ -31,6 +31,7 @@ def process_mvr_fixture(fixture):
     assert fixture.gdtf_spec == "Custom@Light Instr Light Source Pendant 44deg.gdtf"
     assert fixture.gdtf_mode == "DMX Mode"
 
+
 def process_mvr_scene_object(scene_object):
     # test getting focus points
     name = scene_object.name
