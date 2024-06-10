@@ -9,6 +9,7 @@
 * generate wheel:
 
 ```bash
+python -m pip install setuptools wheel twine
 python3 setup.py sdist bdist_wheel
 ```
 * test upload to TestPypi with twine
