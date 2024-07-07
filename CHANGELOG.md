@@ -1,5 +1,11 @@
 ### Changelog
 
+#### Version 0.3.0
+
+- Add MVR writer
+- Adjust Fixture - Address
+- Convert setup.py to pyproject.toml
+
 #### Version 0.2.0
 
 - Handle faulty XML files with extra null byte
