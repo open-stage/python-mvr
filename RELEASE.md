@@ -9,18 +9,18 @@
 * generate wheel:
 
 ```bash
-python -m pip install setuptools wheel twine
-python3 setup.py sdist bdist_wheel
+python -m pip install pip wheel twine
+python3 -m pip wheel .
 ```
 * test upload to TestPypi with twine
 * use `__token__` for username and a token for password
 
 ```bash
-python -m twine upload --repository testpypi dist/* --verbose
+python -m twine upload --repository testpypi ./pymvr*whl --verbose
 ```
 
 * release to official pypi:
 
 ```bash
-python -m twine upload dist/*
+python -m twine upload ./pymvr*whl
 ```
