@@ -4,6 +4,7 @@ from xml.etree.ElementTree import Element
 import zipfile
 from .value import Matrix, ColorCIE # type: ignore
 
+__version__ = "0.2.0"
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
     """Given a GDTF zip archive, find the GeneralSceneDescription of the

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="pymvr"
+dynamic = ["version"]
+readme = "README.md"
+description="My Virtual Rig (MVR) library for Python"
+requires-python = ">=3.8"
+authors = [
+  {name = "vanous", email = "noreply@nodomain.com"},
+]
+maintainers = [
+  {name = "vanous", email = "noreply@nodomain.com"},
+]
+keywords = ["MVR", "GDTF"]
+license = {text = "MIT License"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+
+[tool.setuptools]
+packages = ["pymvr"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pymvr.__version__"}
+
+[project.urls]
+Repository = "https://github.com/open-stage/python-mvr.git"
+Changelog = "https://github.com/open-stage/python-mvr/blob/master/CHANGELOG.md"
+
