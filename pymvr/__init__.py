@@ -8,6 +8,7 @@ from .value import Matrix, Color  # type: ignore
 
 __version__ = "0.3.0.dev0"
 
+
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
     """Given a GDTF zip archive, find the GeneralSceneDescription of the
     corresponding GeneralSceneDescription.xml file."""
@@ -383,6 +384,7 @@ class Fixture(BaseChildNode):
         ElementTree.SubElement(fixture_element, "FixtureID").text = self.fixture_id or "0"
         ElementTree.SubElement(fixture_element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
         ElementTree.SubElement(fixture_element, "UnitNumber").text = str(self.unit_number)
+        ElementTree.SubElement(fixture_element, "Classing").text = str(self.classing)
         if self.custom_id:
             ElementTree.SubElement(fixture_element, "CustomId").text = str(self.custom_id)
         if self.custom_id_type:
