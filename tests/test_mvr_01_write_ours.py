@@ -25,7 +25,7 @@ def process_mvr_child_list(child_list, mvr_scene):
 def test_write_mvr_file(mvr_scene):
     fixtures_list = []
     mvr = pymvr.GeneralSceneDescriptionWriter()
-    pymvr.UserData().to_xml(parent = mvr.xml_root)
+    pymvr.UserData().to_xml(parent=mvr.xml_root)
     scene = pymvr.SceneElement().to_xml(parent=mvr.xml_root)
     layers = pymvr.LayersElement().to_xml(parent=scene)
     layer = pymvr.Layer(name="My layer").to_xml(parent=layers)
@@ -38,7 +38,7 @@ def test_write_mvr_file(mvr_scene):
         for point in focus_points:
             child_list.append(point.to_xml())
 
-    pymvr.AUXData().to_xml(parent = scene)
+    pymvr.AUXData().to_xml(parent=scene)
 
     mvr.files_list = list(set(fixtures_list))
     test_file_path = Path(Path(__file__).parent, "test.mvr")

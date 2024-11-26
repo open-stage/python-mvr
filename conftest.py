@@ -10,9 +10,7 @@ import pymvr
 @pytest.fixture(scope="function")
 def mvr_scene(request):
     file_name = request.param[0]
-    test_mvr_scene_path = Path(
-        Path(__file__).parents[0], "tests", file_name
-    )  # test file path is made from current directory, tests directory and a file name
+    test_mvr_scene_path = Path(Path(__file__).parents[0], "tests", file_name)  # test file path is made from current directory, tests directory and a file name
     mvr_scene = pymvr.GeneralSceneDescription(test_mvr_scene_path)
     yield mvr_scene
 
