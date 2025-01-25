@@ -27,6 +27,13 @@ packages = ["pymvr"]
 [tool.setuptools.dynamic]
 version = {attr = "pymvr.__version__"}
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-mypy>=0.10.3",
+    "ruff>=0.9.3",
+]
+
 [project.urls]
 Repository = "https://github.com/open-stage/python-mvr.git"
 Changelog = "https://github.com/open-stage/python-mvr/blob/master/CHANGELOG.md"
