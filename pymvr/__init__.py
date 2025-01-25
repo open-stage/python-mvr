@@ -6,7 +6,7 @@ import sys
 import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
