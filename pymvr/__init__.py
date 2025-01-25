@@ -38,14 +38,14 @@ class GeneralSceneDescription:
         self.providerVersion: str = self._root.get("providerVersion", "")
 
         layers_collect = self._scene.find("Layers")
-        if layers_collect:
+        if layers_collect is not None:
             self.layers: List["Layer"] = [Layer(xml_node=i) for i in layers_collect.findall("Layer")]
         else:
             self.layers = []
 
         aux_data_collect = self._scene.find("AUXData")
 
-        if aux_data_collect:
+        if aux_data_collect is not None:
             self.aux_data = AUXData(xml_node=aux_data_collect)
         else:
             self.aux_data = None
@@ -172,7 +172,7 @@ class BaseChildNode(BaseNode):
         if xml_node.find("FixtureID") is not None:
             self.fixture_id = xml_node.find("FixtureID").text
 
-        if xml_node.find("FixtureIDNumeric"):
+        if xml_node.find("FixtureIDNumeric") is not None:
             self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
         if xml_node.find("UnitNumber") is not None:
             self.unit_number = int(xml_node.find("UnitNumber").text)
@@ -198,7 +198,7 @@ class BaseChildNode(BaseNode):
             self.alignments = [Alignment(xml_node=i) for i in xml_node.find("Alignments").findall("Alignment")]
         if xml_node.find("Connections"):
             self.connections = [Connection(xml_node=i) for i in xml_node.find("Connections").findall("Connection")]
-        if xml_node.find("CustomCommands"):
+        if xml_node.find("CustomCommands") is not None:
             self.custom_commands = [CustomCommand(xml_node=i) for i in xml_node.find("CustomCommands").findall("CustomCommand")]
         if xml_node.find("Overwrites"):
             self.overwrites = [Overwrite(xml_node=i) for i in xml_node.find("Overwrites").findall("Overwrite")]
@@ -367,7 +367,7 @@ class Fixture(BaseChildNode):
 
         if xml_node.find("Protocols"):
             self.protocols = [Protocol(xml_node=i) for i in xml_node.find("Protocols").findall("Protocol")]
-        if xml_node.find("Mappings"):
+        if xml_node.find("Mappings") is not None:
             self.mappings = [Mapping(xml_node=i) for i in xml_node.find("Mappings").findall("Mapping")]
         if xml_node.find("Gobo") is not None:
             self.gobo = Gobo(xml_node.attrib.get("Gobo"))
@@ -665,7 +665,7 @@ class Symdef(BaseNode):
 
         self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
         _geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
-        if xml_node.find("ChildList"):
+        if xml_node.find("ChildList") is not None:
             child_list = xml_node.find("ChildList")
 
             symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
