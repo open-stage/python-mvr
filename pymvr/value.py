@@ -104,7 +104,7 @@ class Matrix:
 
     def to_xml(self, parent):
         u, v, w, x = self.matrix
-        matrix_str = f"{{{u[0]},{u[1]},{u[2]}}}{{{v[0]},{v[1]},{v[2]}}}{{{w[0]},{w[1]},{w[2]}}}{{{x[0]/0.001},{x[1]/0.001},{x[2]/0.001}}}"
+        matrix_str = f"{{{u[0]},{u[1]},{u[2]}}}{{{v[0]},{v[1]},{v[2]}}}{{{w[0]},{w[1]},{w[2]}}}{{{x[0] / 0.001},{x[1] / 0.001},{x[2] / 0.001}}}"
         matrix = ElementTree.SubElement(parent, type(self).__name__)
         matrix.text = matrix_str
 
