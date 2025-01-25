@@ -23,6 +23,7 @@ classifiers = [
 
 [tool.setuptools]
 packages = ["pymvr"]
+license-files = []
 
 [tool.setuptools.dynamic]
 version = {attr = "pymvr.__version__"}
