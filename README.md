@@ -105,9 +105,17 @@ reference implementation.
 
 ## Development
 
+PRs appreciated. You can use [uv](https://docs.astral.sh/uv/) to get the
+project setup by running:
+
+```bash
+uv sync
+```
+
 ### Typing
 
-- At this point, the `--no-strict-optional` is needed for mypy tests to pass:
+- We try to type the main library, at this point, the
+  `--no-strict-optional` is needed for mypy tests to pass:
 
 ```bash
 mypy pymvr/*py  --pretty  --no-strict-optional
@@ -115,11 +123,17 @@ mypy pymvr/*py  --pretty  --no-strict-optional
 
 ### Format
 
-- to format, use `ruff`
+- To format, use [black](https://github.com/psf/black) or
+  [ruff](https://docs.astral.sh/ruff/)
 
 ### Testing
 
-- to test, use `pytest`
+- to test, use pytest
+
+```bash
+pytest
+```
+
 - to test typing with mypy use:
 
 ```bash

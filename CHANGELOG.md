@@ -1,5 +1,12 @@
 ### Changelog
 
+#### 0.5.0
+
+* Add classing to export
+* Improve testing of elements availability
+* Add python 3.14 beta to testing, add development dependencies
+* Add ruff to tests, adjust CI/CD runs
+
 #### Version 0.3.0
 
 - Add MVR writer
