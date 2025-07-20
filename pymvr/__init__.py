@@ -924,7 +924,8 @@ class VideoScreen(BaseChildNodeExtended):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        if xml_node.find("Sources") is None:
+        super()._read_xml(xml_node)
+        if xml_node.find("Sources") is not None:
             self.sources = Sources(xml_node=xml_node.find("Sources"))
 
 
@@ -1138,21 +1139,56 @@ class Projections(BaseNode):
     # todo
 
 
-class Sources(BaseNode):
+class Source(BaseNode):
     def __init__(
         self,
         linked_geometry: Union[str, None] = None,
         type_: Union[str, None] = None,
+        value: Union[str, None] = None,
+        xml_node: "Element" = None,
         *args,
         **kwargs,
     ):
         self.linked_geometry = linked_geometry
         self.type_ = type_
-        super().__init__(*args, **kwargs)
+        self.value = value
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.linked_geometry = xml_node.attrib.get("linkedGeometry")
         self.type_ = xml_node.attrib.get("type")
+        self.value = xml_node.text
 
     def __str__(self):
         return f"{self.linked_geometry} {self.type_}"
+
+    def to_xml(self):
+        attributes = {}
+        if self.linked_geometry:
+            attributes["linkedGeometry"] = self.linked_geometry
+        if self.type_:
+            attributes["type"] = self.type_
+        element = ElementTree.Element(type(self).__name__, **attributes)
+        element.text = self.value
+        return element
+
+
+class Sources(BaseNode):
+    def __init__(
+        self,
+        sources: List["Source"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.sources = sources
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.sources = [Source(xml_node=i) for i in xml_node.findall("Source")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for source in self.sources:
+            element.append(source.to_xml())
+        return element
