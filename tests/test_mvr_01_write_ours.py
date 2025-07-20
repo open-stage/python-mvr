@@ -38,7 +38,7 @@ def test_write_mvr_file(mvr_scene):
         for point in focus_points:
             child_list.append(point.to_xml())
 
-    pymvr.AUXData().to_xml(parent=scene)
+    mvr_scene.aux_data.to_xml(parent=scene)
 
     mvr.files_list = list(set(fixtures_list))
     test_file_path = Path(Path(__file__).parent, "test.mvr")

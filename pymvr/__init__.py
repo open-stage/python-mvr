@@ -57,7 +57,10 @@ class GeneralSceneDescription:
 class GeneralSceneDescriptionWriter:
     """Creates MVR zip archive with packed GeneralSceneDescription xml and other files"""
 
-    # maybe we should split/rename this into xml creator and mvr creator
+    # Currently, MVR creation is manual, outside of the library.
+    # The to_xml() often takes a parent and then creates a ElementTree.SubElement.
+    # For complete, automatic conversion of an mvr object to xml, we need to adjust all the to_xml methods
+
     def __init__(self):
         self.version_major: str = "1"
         self.version_minor: str = "6"
@@ -277,7 +280,10 @@ class AUXData(BaseNode):
         self.mapping_definitions = [MappingDefinition(xml_node=i) for i in xml_node.findall("MappingDefinition")]
 
     def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, type(self).__name__)
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for _class in self.classes:
+            element.append(_class.to_xml())
+        return element
 
 
 class MappingDefinition(BaseNode):
@@ -609,6 +615,10 @@ class Class(BaseNode):
 
     def __str__(self):
         return f"{self.name}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        return element
 
 
 class Position(BaseNode):
