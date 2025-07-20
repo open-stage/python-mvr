@@ -6,7 +6,7 @@ import sys
 import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -381,10 +381,11 @@ class Fixture(BaseChildNode):
         if self.focus is not None:
             ElementTree.SubElement(fixture_element, "Focus").text = self.focus
 
-        ElementTree.SubElement(fixture_element, "FixtureID").text = self.fixture_id or "0"
+        ElementTree.SubElement(fixture_element, "FixtureID").text = str(self.fixture_id) or "0"
         ElementTree.SubElement(fixture_element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
         ElementTree.SubElement(fixture_element, "UnitNumber").text = str(self.unit_number)
-        ElementTree.SubElement(fixture_element, "Classing").text = str(self.classing)
+        if self.classing is not None:
+            ElementTree.SubElement(fixture_element, "Classing").text = str(self.classing)
         if self.custom_id:
             ElementTree.SubElement(fixture_element, "CustomId").text = str(self.custom_id)
         if self.custom_id_type:
