@@ -10,6 +10,7 @@ def test_version(mvr_scene):
 
 
 def process_mvr_child_list(child_list, mvr_scene):
+    assert len(child_list.fixtures) == 2
     for fixture in child_list.fixtures:
         process_mvr_fixture(fixture)
     for group in child_list.group_objects:
@@ -30,7 +31,8 @@ def process_mvr_fixture(fixture):
 
 @pytest.mark.parametrize("mvr_scene", [("test_json.mvr",)], indirect=True)
 def test_fixture(mvr_scene):
-    for layer in mvr_scene.layers:
+    assert len(mvr_scene.scene.layers) > 0
+    for layer in mvr_scene.scene.layers:
         assert layer.name == "Layer 1"
         assert layer.uuid == "1e4954b5-992c-4146-b71f-5b497834087f"
         process_mvr_child_list(layer.child_list, mvr_scene)

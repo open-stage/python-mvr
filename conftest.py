@@ -15,7 +15,7 @@ def mvr_scene(request):
     yield mvr_scene
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def pymvr_module():
     yield pymvr
 

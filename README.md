@@ -34,31 +34,38 @@ python -m pip install https://codeload.github.com/open-stage/python-mvr/zip/refs
 
 ```python
 import pymvr
-mvr_scene = pymvr.GeneralSceneDescription("mvr_file.mvr")
+mvr_file = pymvr.GeneralSceneDescription("mvr_file.mvr")
 
-for layer_index, layer in enumerate(mvr_scene.layers):
+for layer_index, layer in enumerate(mvr_file.scene.layers):
     ... #process data
 ```
 
 ### Writing
 
 ```python
-fixtures_list = []
+
 mvr = pymvr.GeneralSceneDescriptionWriter()
 pymvr.UserData().to_xml(parent=mvr.xml_root)
-scene = pymvr.SceneElement().to_xml(parent=mvr.xml_root)
-layers = pymvr.LayersElement().to_xml(parent=scene)
-layer = pymvr.Layer(name="Test layer").to_xml(parent=layers)
-child_list = pymvr.ChildList().to_xml(parent=layer)
+scene = pymvr.Scene().to_xml(parent=mvr.xml_root)
+pymvr.AUXData().to_xml(parent=scene)
+fixtures_list = []
+
+layers = pymvr.Layers()
+layer = pymvr.Layer(name="Test layer")
+layers.layers.append(layer)
+
+child_list = pymvr.ChildList()
+layer.child_list = child_list
 
 fixture = pymvr.Fixture(name="Test Fixture")  # not really a valid fixture
-child_list.append(fixture.to_xml())
+child_list.fixtures.append(fixture)
 fixtures_list.append((fixture.gdtf_spec, fixture.gdtf_spec))
 
-pymvr.AUXData().to_xml(parent=scene)
+layers.to_xml(parent=scene)
 
 mvr.files_list = list(set(fixtures_list))
-mvr.write_mvr("example.mvr")
+test_file_path = Path(Path(__file__).parent, "example.mvr")
+mvr.write_mvr(test_file_path)
 ```
 
 See [BlenderDMX](https://github.com/open-stage/blender-dmx) and

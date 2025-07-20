@@ -58,7 +58,7 @@ def process_classes(mvr_scene):
 
 @pytest.mark.parametrize("mvr_scene", [("scene_objects.mvr",)], indirect=True)
 def test_fixture(mvr_scene):
-    for layer in mvr_scene.layers:
+    for layer in mvr_scene.scene.layers:
         process_mvr_child_list(layer.child_list, mvr_scene)
 
-    process_classes(mvr_scene)
+    process_classes(mvr_scene.scene)

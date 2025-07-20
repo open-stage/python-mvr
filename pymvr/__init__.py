@@ -26,8 +26,6 @@ class GeneralSceneDescription:
             self._package = zipfile.ZipFile(path, "r")
         if self._package is not None:
             self._root = _find_root(self._package)
-            self._user_data = self._root.find("UserData")
-            self._scene = self._root.find("Scene")
         if self._root is not None:
             self._read_xml()
 
@@ -37,21 +35,14 @@ class GeneralSceneDescription:
         self.provider: str = self._root.get("provider", "")
         self.providerVersion: str = self._root.get("providerVersion", "")
 
-        layers_collect = self._scene.find("Layers")
-        if layers_collect is not None:
-            self.layers: List["Layer"] = [Layer(xml_node=i) for i in layers_collect.findall("Layer")]
-        else:
-            self.layers = []
+        scene = self._root.find("Scene")
+        if scene is not None:
+            self.scene = Scene(xml_node=scene)
 
-        aux_data_collect = self._scene.find("AUXData")
+        user_data = self._root.find("UserData")
 
-        if aux_data_collect is not None:
-            self.aux_data = AUXData(xml_node=aux_data_collect)
-        else:
-            self.aux_data = None
-
-        if self._user_data is not None:
-            self.user_data: List["Data"] = [Data(xml_node=i) for i in self._user_data.findall("Data")]
+        if user_data is not None:
+            self.user_data = UserData(xml_node=user_data)
 
 
 class GeneralSceneDescriptionWriter:
@@ -85,21 +76,6 @@ class GeneralSceneDescriptionWriter:
                         print(f"File does not exist {file_path}")
 
 
-class SceneElement:
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, "Scene")
-
-
-class LayersElement:
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, "Layers")
-
-
-class UserData:
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, "UserData")
-
-
 class BaseNode:
     def __init__(self, xml_node: "Element" = None):
         if xml_node is not None:
@@ -107,6 +83,107 @@ class BaseNode:
 
     def _read_xml(self, xml_node: "Element"):
         pass
+
+
+class Scene(BaseNode):
+    def __init__(
+        self,
+        layers: "Layers" = None,
+        aux_data: "AUXData" = None,
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.layers = layers
+        self.aux_data = aux_data
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.layers = Layers(xml_node=xml_node.find("Layers"))
+
+        aux_data_collect = xml_node.find("AUXData")
+
+        if aux_data_collect is not None:
+            self.aux_data = AUXData(xml_node=aux_data_collect)
+        else:
+            self.aux_data = None
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "Scene")
+        if self.layers:
+            self.layers.to_xml(element)
+        if self.aux_data:
+            self.aux_data.to_xml(element)
+        return element
+
+
+class Layers(BaseNode):
+    def __init__(
+        self,
+        layers: List["Layer"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.layers = layers
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.layers = [Layer(xml_node=i) for i in xml_node.findall("Layer")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "Layers")
+        for layer in self.layers:
+            element.append(layer.to_xml())
+        return element
+
+    def __iter__(self):
+        return iter(self.layers)
+
+    def __getitem__(self, item):
+        return self.layers[item]
+
+    def append(self, layer: "Layer"):
+        self.layers.append(layer)
+
+    def extend(self, layers: List["Layer"]):
+        self.layers.extend(layers)
+
+    def insert(self, index: int, layer: "Layer"):
+        self.layers.insert(index, layer)
+
+    def remove(self, layer: "Layer"):
+        self.layers.remove(layer)
+
+    def pop(self, index: int = -1):
+        return self.layers.pop(index)
+
+    def clear(self):
+        self.layers.clear()
+
+    def __len__(self):
+        return len(self.layers)
+
+
+class UserData(BaseNode):
+    def __init__(
+        self,
+        data: List["Data"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.data = data
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.data = [Data(xml_node=i) for i in xml_node.findall("Data")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for _data in self.data:
+            element.append(_data.to_xml())
+        return element
 
 
 class BaseChildNode(BaseNode):
@@ -251,6 +328,10 @@ class Data(BaseNode):
 
     def __str__(self):
         return f"{self.provider} {self.ver}"
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        return ElementTree.Element(type(self).__name__, provider=self.provider, ver=self.ver)
 
 
 class AUXData(BaseNode):
@@ -502,6 +583,15 @@ class GroupObject(BaseNode):
     def __str__(self):
         return f"{self.name}"
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.classing:
+            ElementTree.SubElement(element, "Classing").text = self.classing
+        if self.child_list:
+            self.child_list.to_xml(parent=element)
+        return element
+
 
 class ChildList(BaseNode):
     def __init__(
@@ -576,7 +666,24 @@ class ChildList(BaseNode):
         self.projectors = [Projector(xml_node=i) for i in xml_node.findall("Projector")]
 
     def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, type(self).__name__)
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for fixture in self.fixtures:
+            element.append(fixture.to_xml())
+        for focus_point in self.focus_points:
+            element.append(focus_point.to_xml())
+        for group_object in self.group_objects:
+            element.append(group_object.to_xml())
+        for scene_object in self.scene_objects:
+            element.append(scene_object.to_xml())
+        for support in self.supports:
+            element.append(support.to_xml())
+        for truss in self.trusses:
+            element.append(truss.to_xml())
+        for video_screen in self.video_screens:
+            element.append(video_screen.to_xml())
+        for projector in self.projectors:
+            element.append(projector.to_xml())
+        return element
 
 
 class Layer(BaseNode):
@@ -606,8 +713,12 @@ class Layer(BaseNode):
         if xml_node.find("Matrix") is not None:
             self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
 
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, type(self).__name__, name=self.name, uuid=self.uuid)
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.child_list:
+            self.child_list.to_xml(parent=element)
+        return element
 
     def __str__(self):
         return f"{self.name}"

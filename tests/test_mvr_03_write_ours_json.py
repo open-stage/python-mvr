@@ -28,29 +28,30 @@ def test_write_from_json():
     ]
     fixtures_list = []
     mvr = pymvr.GeneralSceneDescriptionWriter()
-    pymvr.UserData().to_xml(parent=mvr.xml_root)
-    scene = pymvr.SceneElement().to_xml(parent=mvr.xml_root)
-    layers = pymvr.LayersElement().to_xml(parent=scene)
-    for layer in data:
-        new_layer = pymvr.Layer(name=layer["name"], uuid=layer["uuid"]).to_xml(parent=layers)
-        child_list = pymvr.ChildList().to_xml(parent=new_layer)
-        for fixture in layer["fixtures"]:
+    layers = pymvr.Layers()
+    for layer_data in data:
+        layer = pymvr.Layer(name=layer_data["name"], uuid=layer_data["uuid"])
+        layers.append(layer)
+        child_list = pymvr.ChildList()
+        layer.child_list = child_list
+
+        for fixture_data in layer_data["fixtures"]:
             new_addresses = [
-                pymvr.Address(dmx_break=address["dmx_break"], address=address["address"], universe=address["universe"]) for address in fixture["addresses"]
+                pymvr.Address(dmx_break=address["dmx_break"], address=address["address"], universe=address["universe"]) for address in fixture_data["addresses"]
             ]
             new_fixture = pymvr.Fixture(
-                name=fixture["gdtf_spec"],
-                uuid=fixture["uuid"],
-                gdtf_spec=fixture["gdtf_spec"],
-                gdtf_mode=fixture["gdtf_mode"],
-                fixture_id=fixture["fixture_id"],
+                name=fixture_data["gdtf_spec"],
+                uuid=fixture_data["uuid"],
+                gdtf_spec=fixture_data["gdtf_spec"],
+                gdtf_mode=fixture_data["gdtf_mode"],
+                fixture_id=fixture_data["fixture_id"],
                 addresses=new_addresses,
             )
 
-            child_list.append(new_fixture.to_xml())
+            child_list.fixtures.append(new_fixture)
             fixtures_list.append((new_fixture.gdtf_spec, new_fixture.gdtf_spec))
 
-    pymvr.AUXData().to_xml(parent=scene)
-    mvr.files_list = list(set(fixtures_list))
+    scene = pymvr.Scene(layers=layers)
+    scene.to_xml(mvr.xml_root)
     test_file_path = Path(Path(__file__).parent, "test_json.mvr")
     mvr.write_mvr(test_file_path)
