@@ -517,8 +517,6 @@ class Layer(BaseNode):
         self,
         name: str = "",
         uuid: Union[str, None] = None,
-        gdtf_spec: Union[str, None] = None,
-        gdtf_mode: Union[str, None] = None,
         matrix: Matrix = Matrix(0),
         child_list: Union["ChildList", None] = None,
         *args,
@@ -528,8 +526,6 @@ class Layer(BaseNode):
         if uuid is None:
             uuid = str(py_uuid.uuid4())
         self.uuid = uuid
-        self.gdtf_spec = gdtf_spec
-        self.gdtf_mode = gdtf_mode
         self.child_list = child_list
         self.matrix = matrix
 
@@ -538,15 +534,6 @@ class Layer(BaseNode):
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name", "")
         self.uuid = xml_node.attrib.get("uuid")
-        _gdtf_spec = xml_node.find("GDTFSpec")
-        if _gdtf_spec is not None:
-            self.gdtf_spec = _gdtf_spec.text
-            if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
-                if self.gdtf_spec[-5:].lower() != ".gdtf":
-                    self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        _gdtf_mode: Optional["Element"] = xml_node.find("GDTFMode")
-        if _gdtf_mode is not None:
-            self.gdtf_mode = _gdtf_mode.text
 
         self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
         if xml_node.find("Matrix") is not None:
