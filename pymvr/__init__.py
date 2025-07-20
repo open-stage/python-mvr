@@ -190,7 +190,8 @@ class BaseChildNode(BaseNode):
             self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
 
         if xml_node.find("CastShadow") is not None:
-            self.cast_shadow = bool(xml_node.find("CastShadow").text)
+            text_value = (xml_node.find("CastShadow").text or "false").lower()
+            self.cast_shadow = text_value in ("true", "1")
 
         if xml_node.find("Addresses") is not None:
             self.addresses = [Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")]
@@ -370,10 +371,12 @@ class Fixture(BaseChildNode):
             self.color = Color(str_repr=xml_node.find("Color").text)
 
         if xml_node.find("DMXInvertPan") is not None:
-            self.dmx_invert_pan = bool(xml_node.find("DMXInvertPan").text)
+            text_value = (xml_node.find("DMXInvertPan").text or "false").lower()
+            self.dmx_invert_pan = text_value in ("true", "1")
 
         if xml_node.find("DMXInvertTilt") is not None:
-            self.dmx_invert_tilt = bool(xml_node.find("DMXInvertTilt").text)
+            text_value = (xml_node.find("DMXInvertTilt").text or "false").lower()
+            self.dmx_invert_tilt = text_value in ("true", "1")
 
         if xml_node.find("Position") is not None:
             self.position = xml_node.find("Position").text
@@ -389,7 +392,7 @@ class Fixture(BaseChildNode):
         if xml_node.find("Mappings") is not None:
             self.mappings = [Mapping(xml_node=i) for i in xml_node.find("Mappings").findall("Mapping")]
         if xml_node.find("Gobo") is not None:
-            self.gobo = Gobo(xml_node.attrib.get("Gobo"))
+            self.gobo = Gobo(xml_node=xml_node.find("Gobo"))
 
     def to_xml(self):
         fixture_element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
@@ -399,6 +402,12 @@ class Fixture(BaseChildNode):
         ElementTree.SubElement(fixture_element, "GDTFMode").text = self.gdtf_mode
         if self.focus is not None:
             ElementTree.SubElement(fixture_element, "Focus").text = self.focus
+
+        if self.cast_shadow:
+            ElementTree.SubElement(fixture_element, "CastShadow").text = "true"
+
+        if self.position is not None:
+            ElementTree.SubElement(fixture_element, "Position").text = self.position
 
         ElementTree.SubElement(fixture_element, "FixtureID").text = str(self.fixture_id) or "0"
         ElementTree.SubElement(fixture_element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
@@ -417,6 +426,15 @@ class Fixture(BaseChildNode):
         addresses = ElementTree.SubElement(fixture_element, "Addresses")
         for address in self.addresses:
             Address(address.dmx_break, address.universe, address.address).to_xml(addresses)
+
+        if self.mappings:
+            mappings_element = ElementTree.SubElement(fixture_element, "Mappings")
+            for mapping in self.mappings:
+                mappings_element.append(mapping.to_xml())
+
+        if self.gobo:
+            fixture_element.append(self.gobo.to_xml())
+
         return fixture_element
 
     def __str__(self):
@@ -990,7 +1008,7 @@ class Mapping(BaseNode):
         uy: Union[int, None] = None,
         ox: Union[int, None] = None,
         oy: Union[int, None] = None,
-        rz: Union[int, None] = None,
+        rz: Union[float, None] = None,
         *args,
         **kwargs,
     ):
@@ -1008,10 +1026,24 @@ class Mapping(BaseNode):
         self.uy = int(xml_node.find("uy").text)
         self.ox = int(xml_node.find("ox").text)
         self.oy = int(xml_node.find("oy").text)
-        self.rz = int(xml_node.find("rz").text)
+        self.rz = float(xml_node.find("rz").text)
 
     def __str__(self):
         return f"{self.link_def}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, linkedDef=self.link_def)
+        if self.ux is not None:
+            ElementTree.SubElement(element, "ux").text = str(self.ux)
+        if self.uy is not None:
+            ElementTree.SubElement(element, "uy").text = str(self.uy)
+        if self.ox is not None:
+            ElementTree.SubElement(element, "ox").text = str(self.ox)
+        if self.oy is not None:
+            ElementTree.SubElement(element, "oy").text = str(self.oy)
+        if self.rz is not None:
+            ElementTree.SubElement(element, "rz").text = str(self.rz)
+        return element
 
 
 class Gobo(BaseNode):
@@ -1032,6 +1064,11 @@ class Gobo(BaseNode):
 
     def __str__(self):
         return f"{self.filename} {self.rotation}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, rotation=str(self.rotation))
+        element.text = self.filename
+        return element
 
 
 class CustomCommand(BaseNode):
