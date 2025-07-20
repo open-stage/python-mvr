@@ -1,6 +1,5 @@
 from typing import List, Union
 from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
 
 
 # Data type that only allows a specific set of values, if given a value
@@ -39,7 +38,7 @@ class Color:
                 self.x = float(str_repr.split(",")[0])
                 self.y = float(str_repr.split(",")[1])
                 self.Y = float(str_repr.split(",")[2])
-            except:
+            except Exception:
                 # Fail gracefully with default color (White)
                 self.x = 0.3127
                 self.y = 0.3290

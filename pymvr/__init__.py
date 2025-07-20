@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Union
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 import zipfile
@@ -81,7 +81,7 @@ class GeneralSceneDescriptionWriter:
                 for file_path, file_name in self.files_list:
                     try:
                         z.write(file_path, arcname=file_name)
-                    except Exception as e:
+                    except Exception:
                         print(f"File does not exist {file_path}")
 
 
@@ -283,6 +283,12 @@ class AUXData(BaseNode):
         element = ElementTree.SubElement(parent, type(self).__name__)
         for _class in self.classes:
             element.append(_class.to_xml())
+        for symdef in self.symdefs:
+            element.append(symdef.to_xml())
+        for position in self.positions:
+            element.append(position.to_xml())
+        for mapping_definition in self.mapping_definitions:
+            element.append(mapping_definition.to_xml())
         return element
 
 
@@ -312,6 +318,13 @@ class MappingDefinition(BaseNode):
         self.size_y = int(xml_node.find("SizeY").text)
         self.source = xml_node.find("Source")  # TODO
         self.scale_handling = xml_node.find("ScaleHandeling").text  # TODO ENUM
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        ElementTree.SubElement(element, "SizeX").text = str(self.size_x)
+        ElementTree.SubElement(element, "SizeY").text = str(self.size_y)
+        # TODO source and scale_handling
+        return element
 
 
 class Fixture(BaseChildNode):
@@ -640,6 +653,10 @@ class Position(BaseNode):
     def __str__(self):
         return f"{self.name}"
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        return element
+
 
 class Symdef(BaseNode):
     def __init__(
@@ -674,6 +691,14 @@ class Symdef(BaseNode):
         # sometimes the list of geometry3d is full of duplicates, eliminate them here
         self.geometry3d = list(set(_geometry3d))
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        for geo in self.geometry3d:
+            element.append(geo.to_xml())
+        for sym in self.symbol:
+            element.append(sym.to_xml())
+        return element
+
 
 class Geometry3D(BaseNode):
     def __init__(
@@ -707,6 +732,11 @@ class Geometry3D(BaseNode):
     def __hash__(self):
         return hash((self.file_name, str(self.matrix)))
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, fileName=self.file_name)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        return element
+
 
 class Symbol(BaseNode):
     def __init__(
@@ -730,6 +760,11 @@ class Symbol(BaseNode):
 
     def __str__(self):
         return f"{self.uuid}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, uuid=self.uuid, symdef=self.symdef)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        return element
 
 
 class Geometries(BaseNode):
