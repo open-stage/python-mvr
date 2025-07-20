@@ -121,7 +121,6 @@ class BaseChildNode(BaseNode):
         fixture_id: Union[str, None] = None,
         fixture_id_numeric: int = 0,
         unit_number: int = 0,
-        fixture_type_id: int = 0,
         custom_id: int = 0,
         custom_id_type: int = 0,
         cast_shadow: bool = False,
@@ -145,7 +144,6 @@ class BaseChildNode(BaseNode):
         self.fixture_id = fixture_id
         self.fixture_id_numeric = fixture_id_numeric
         self.unit_number = unit_number
-        self.fixture_type_id = fixture_type_id
         self.custom_id = custom_id
         self.custom_id_type = custom_id_type
         self.cast_shadow = cast_shadow
@@ -179,9 +177,6 @@ class BaseChildNode(BaseNode):
             self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
         if xml_node.find("UnitNumber") is not None:
             self.unit_number = int(xml_node.find("UnitNumber").text)
-
-        if xml_node.find("FixtureTypeId") is not None:
-            self.fixture_type_id = int(xml_node.find("FixtureTypeId").text or 0)
 
         if xml_node.find("CustomId") is not None:
             self.custom_id = int(xml_node.find("CustomId").text or 0)
@@ -382,7 +377,7 @@ class Fixture(BaseChildNode):
             self.position = xml_node.find("Position").text
 
         if xml_node.find("Function") is not None:
-            self.function_ = xml_node.find("Position").text
+            self.function_ = xml_node.find("Function").text
 
         if xml_node.find("ChildPosition") is not None:
             self.child_position = xml_node.find("ChildPosition").text
@@ -395,45 +390,80 @@ class Fixture(BaseChildNode):
             self.gobo = Gobo(xml_node=xml_node.find("Gobo"))
 
     def to_xml(self):
-        fixture_element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        fixture_element = ElementTree.Element(type(self).__name__, **attributes)
 
         Matrix(self.matrix.matrix).to_xml(fixture_element)
-        ElementTree.SubElement(fixture_element, "GDTFSpec").text = self.gdtf_spec
-        ElementTree.SubElement(fixture_element, "GDTFMode").text = self.gdtf_mode
-        if self.focus is not None:
+        if self.classing:
+            ElementTree.SubElement(fixture_element, "Classing").text = self.classing
+        if self.gdtf_spec:
+            ElementTree.SubElement(fixture_element, "GDTFSpec").text = self.gdtf_spec
+        if self.gdtf_mode:
+            ElementTree.SubElement(fixture_element, "GDTFMode").text = self.gdtf_mode
+        if self.focus:
             ElementTree.SubElement(fixture_element, "Focus").text = self.focus
-
         if self.cast_shadow:
             ElementTree.SubElement(fixture_element, "CastShadow").text = "true"
-
-        if self.position is not None:
+        if self.dmx_invert_pan:
+            ElementTree.SubElement(fixture_element, "DMXInvertPan").text = "true"
+        if self.dmx_invert_tilt:
+            ElementTree.SubElement(fixture_element, "DMXInvertTilt").text = "true"
+        if self.position:
             ElementTree.SubElement(fixture_element, "Position").text = self.position
+        if self.function_:
+            ElementTree.SubElement(fixture_element, "Function").text = self.function_
+        if self.child_position:
+            ElementTree.SubElement(fixture_element, "ChildPosition").text = self.child_position
 
         ElementTree.SubElement(fixture_element, "FixtureID").text = str(self.fixture_id) or "0"
         ElementTree.SubElement(fixture_element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
         ElementTree.SubElement(fixture_element, "UnitNumber").text = str(self.unit_number)
-        if self.classing is not None:
-            ElementTree.SubElement(fixture_element, "Classing").text = str(self.classing)
-        if self.custom_id:
-            ElementTree.SubElement(fixture_element, "CustomId").text = str(self.custom_id)
-        if self.custom_id_type:
-            ElementTree.SubElement(fixture_element, "CustomIdType").text = str(self.custom_id_type)
+
+        if self.addresses:
+            addresses_element = ElementTree.SubElement(fixture_element, "Addresses")
+            for address in self.addresses:
+                address.to_xml(addresses_element)
+        if self.protocols:
+            protocols_element = ElementTree.SubElement(fixture_element, "Protocols")
+            for protocol in self.protocols:
+                protocols_element.append(protocol.to_xml())
+        if self.alignments:
+            alignments_element = ElementTree.SubElement(fixture_element, "Alignments")
+            for alignment in self.alignments:
+                alignments_element.append(alignment.to_xml())
+        if self.custom_commands:
+            commands_element = ElementTree.SubElement(fixture_element, "CustomCommands")
+            for command in self.custom_commands:
+                commands_element.append(command.to_xml())
+        if self.overwrites:
+            overwrites_element = ElementTree.SubElement(fixture_element, "Overwrites")
+            for overwrite in self.overwrites:
+                overwrites_element.append(overwrite.to_xml())
+        if self.connections:
+            connections_element = ElementTree.SubElement(fixture_element, "Connections")
+            for connection in self.connections:
+                connections_element.append(connection.to_xml())
+
         if isinstance(self.color, Color):
             self.color.to_xml(fixture_element)
-        else:
+        elif self.color:
             Color(str_repr=self.color).to_xml(fixture_element)
 
-        addresses = ElementTree.SubElement(fixture_element, "Addresses")
-        for address in self.addresses:
-            Address(address.dmx_break, address.universe, address.address).to_xml(addresses)
+        if self.custom_id_type:
+            ElementTree.SubElement(fixture_element, "CustomIdType").text = str(self.custom_id_type)
+        if self.custom_id:
+            ElementTree.SubElement(fixture_element, "CustomId").text = str(self.custom_id)
 
         if self.mappings:
             mappings_element = ElementTree.SubElement(fixture_element, "Mappings")
             for mapping in self.mappings:
                 mappings_element.append(mapping.to_xml())
-
         if self.gobo:
             fixture_element.append(self.gobo.to_xml())
+        if self.child_list:
+            self.child_list.to_xml(fixture_element)
 
         return fixture_element
 
@@ -810,6 +840,10 @@ class Geometries(BaseNode):
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
+        for geo in self.geometry3d:
+            element.append(geo.to_xml())
+        for sym in self.symbol:
+            element.append(sym.to_xml())
         return element
 
 
@@ -828,6 +862,8 @@ class FocusPoint(BaseNode):
         self.uuid = uuid
         self.matrix = matrix
         self.classing = classing
+        if geometries is None:
+            geometries = Geometries()
         self.geometries = geometries
 
         super().__init__(*args, **kwargs)
@@ -848,7 +884,9 @@ class FocusPoint(BaseNode):
     def to_xml(self):
         element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
         Matrix(self.matrix.matrix).to_xml(parent=element)
-        Geometries().to_xml(parent=element)
+        if self.classing:
+            ElementTree.SubElement(element, "Classing").text = self.classing
+        self.geometries.to_xml(parent=element)
         return element
 
 
@@ -1051,12 +1089,13 @@ class Gobo(BaseNode):
         self,
         rotation: Union[str, float, None] = None,
         filename: Union[str, None] = None,
+        xml_node: "Element" = None,
         *args,
         **kwargs,
     ):
         self.rotation = rotation
         self.filename = filename
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.rotation = float(xml_node.attrib.get("rotation", 0))
@@ -1087,6 +1126,11 @@ class CustomCommand(BaseNode):
 
     def __str__(self):
         return f"{self.custom_command}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__)
+        element.text = self.custom_command
+        return element
 
 
 class Projections(BaseNode):
