@@ -7,7 +7,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "0.5.1"
+__version__ = "1.0.0-dev0"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -454,9 +454,6 @@ class BaseChildNode(BaseNode):
         else:
             self.addresses = Addresses()
 
-        if len(self.addresses) == 0:
-            self.addresses.address.append(Address(dmx_break=0, universe=0, address=0))
-
         if xml_node.find("Alignments"):
             self.alignments = Alignments(xml_node=xml_node.find("Alignments"))
         if xml_node.find("Connections"):
@@ -544,7 +541,7 @@ class Data(BaseNode):
     def __init__(
         self,
         provider: str = "",
-        ver: str = "",
+        ver: str = "1",
         *args,
         **kwargs,
     ):
@@ -655,6 +652,7 @@ class Fixture(BaseChildNode):
         protocols: "Protocols" = None,
         mappings: "Mappings" = None,
         gobo: Union["Gobo", None] = None,
+        unit_number: int = 0,
         *args,
         **kwargs,
     ):
@@ -668,6 +666,7 @@ class Fixture(BaseChildNode):
         self.protocols = protocols if protocols is not None else Protocols()
         self.mappings = mappings if mappings is not None else Mappings()
         self.gobo = gobo
+        self.unit_number = unit_number
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -702,6 +701,8 @@ class Fixture(BaseChildNode):
             self.mappings = Mappings(xml_node=xml_node.find("Mappings"))
         if xml_node.find("Gobo") is not None:
             self.gobo = Gobo(xml_node=xml_node.find("Gobo"))
+        if xml_node.find("UnitNumber") is not None:
+            self.unit_number = int(xml_node.find("UnitNumber").text)
 
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
@@ -723,7 +724,7 @@ class Fixture(BaseChildNode):
         if self.child_position:
             ElementTree.SubElement(element, "ChildPosition").text = self.child_position
 
-        if self.protocols:
+        if len(self.protocols) > 0:
             self.protocols.to_xml(element)
 
         if isinstance(self.color, Color):
@@ -731,10 +732,12 @@ class Fixture(BaseChildNode):
         elif self.color:
             Color(str_repr=self.color).to_xml(element)
 
-        if self.mappings:
+        if len(self.mappings) > 0:
             self.mappings.to_xml(element)
         if self.gobo:
             element.append(self.gobo.to_xml())
+
+        ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
 
         return element
 
@@ -1129,13 +1132,6 @@ class Geometries(BaseNode):
     def _read_xml(self, xml_node: "Element"):
         self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
         self.geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
-        if xml_node.find("ChildList"):
-            child_list = xml_node.find("ChildList")
-
-            symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
-            geometry3ds = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
-            self.symbol += symbols  # TODO remove this over time, children should only be in child_list
-            self.geometry3d += geometry3ds
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
@@ -1229,7 +1225,6 @@ class Truss(BaseChildNodeExtended):
         if self.child_position:
             ElementTree.SubElement(element, "ChildPosition").text = self.child_position
         return element
-
 
 
 class Support(BaseChildNodeExtended):
@@ -1343,7 +1338,7 @@ class Projector(BaseChildNodeExtended):
 class Protocol(BaseNode):
     def __init__(
         self,
-        geometry: Union[str, None] = None,
+        geometry: Union[str, None] = "NetworkInOut_1",
         name: Union[str, None] = None,
         type_: Union[str, None] = None,
         version: Union[str, None] = None,
@@ -1387,7 +1382,7 @@ class Protocol(BaseNode):
 class Alignment(BaseNode):
     def __init__(
         self,
-        geometry: Union[str, None] = None,
+        geometry: Union[str, None] = "Beam",
         up: Union[str, None] = "0,0,1",
         direction: Union[str, None] = "0,0,-1",
         *args,
@@ -1499,11 +1494,21 @@ class Mapping(BaseNode):
 
     def _read_xml(self, xml_node: "Element"):
         self.link_def = xml_node.attrib.get("linkedDef")
-        self.ux = int(xml_node.find("ux").text)
-        self.uy = int(xml_node.find("uy").text)
-        self.ox = int(xml_node.find("ox").text)
-        self.oy = int(xml_node.find("oy").text)
-        self.rz = float(xml_node.find("rz").text)
+        ux_node = xml_node.find("ux")
+        if ux_node is not None:
+            self.ux = int(ux_node.text)
+        uy_node = xml_node.find("uy")
+        if uy_node is not None:
+            self.uy = int(uy_node.text)
+        ox_node = xml_node.find("ox")
+        if ox_node is not None:
+            self.ox = int(ox_node.text)
+        oy_node = xml_node.find("oy")
+        if oy_node is not None:
+            self.oy = int(oy_node.text)
+        rz_node = xml_node.find("rz")
+        if rz_node is not None:
+            self.rz = float(rz_node.text)
 
     def __str__(self):
         return f"{self.link_def}"
