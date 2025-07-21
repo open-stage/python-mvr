@@ -331,7 +331,7 @@ class Network(BaseNode):
             attributes["dhcp"] = "true"
         if self.hostname:
             attributes["hostname"] = self.hostname
-        element = ElementTree.SubElement(parent, "Network", **attributes)
+        element = ElementTree.SubElement(parent, "Network", attributes)
         return element
 
 
@@ -470,7 +470,7 @@ class BaseChildNode(BaseNode):
     def __str__(self):
         return f"{self.name}"
 
-    def to_xml(self, element: Element):
+    def populate_xml(self, element: Element):
         Matrix(self.matrix.matrix).to_xml(element)
         if self.classing:
             ElementTree.SubElement(element, "Classing").text = self.classing
@@ -531,8 +531,8 @@ class BaseChildNodeExtended(BaseChildNode):
     def __str__(self):
         return f"{self.name}"
 
-    def to_xml(self, element: Element):
-        super().to_xml(element)
+    def populate_xml(self, element: Element):
+        super().populate_xml(element)
         if self.geometries:
             self.geometries.to_xml(element)
 
@@ -708,8 +708,8 @@ class Fixture(BaseChildNode):
         attributes = {"name": self.name, "uuid": self.uuid}
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
-        element = ElementTree.Element(type(self).__name__, **attributes)
-        super().to_xml(element)
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
 
         if self.focus:
             ElementTree.SubElement(element, "Focus").text = self.focus
@@ -1186,7 +1186,13 @@ class FocusPoint(BaseNode):
 
 
 class SceneObject(BaseChildNodeExtended):
-    pass
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
+        return element
 
 
 class Truss(BaseChildNodeExtended):
@@ -1216,8 +1222,8 @@ class Truss(BaseChildNodeExtended):
         attributes = {"name": self.name, "uuid": self.uuid}
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
-        element = ElementTree.Element(type(self).__name__, **attributes)
-        super().to_xml(element)
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
         if self.position:
             ElementTree.SubElement(element, "Position").text = self.position
         if self.function_:
@@ -1259,8 +1265,8 @@ class Support(BaseChildNodeExtended):
         attributes = {"name": self.name, "uuid": self.uuid}
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
-        element = ElementTree.Element(type(self).__name__, **attributes)
-        super().to_xml(element)
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
 
         if self.position:
             ElementTree.SubElement(element, "Position").text = self.position
@@ -1296,8 +1302,8 @@ class VideoScreen(BaseChildNodeExtended):
         attributes = {"name": self.name, "uuid": self.uuid}
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
-        element = ElementTree.Element(type(self).__name__, **attributes)
-        super().to_xml(element)
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
 
         if self.sources:
             self.sources.to_xml(element)
@@ -1326,8 +1332,8 @@ class Projector(BaseChildNodeExtended):
         attributes = {"name": self.name, "uuid": self.uuid}
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
-        element = ElementTree.Element(type(self).__name__, **attributes)
-        super().to_xml(element)
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
 
         if self.projections:
             self.projections.to_xml(element)
@@ -1375,7 +1381,7 @@ class Protocol(BaseNode):
             attributes["version"] = self.version
         if self.transmission:
             attributes["transmission"] = self.transmission
-        element = ElementTree.Element(type(self).__name__, **attributes)
+        element = ElementTree.Element(type(self).__name__, attributes)
         return element
 
 
@@ -1409,7 +1415,7 @@ class Alignment(BaseNode):
             attributes["up"] = self.up
         if self.direction:
             attributes["direction"] = self.direction
-        element = ElementTree.Element(type(self).__name__, **attributes)
+        element = ElementTree.Element(type(self).__name__, attributes)
         return element
 
 
@@ -1436,7 +1442,7 @@ class Overwrite(BaseNode):
         attributes = {"universal": self.universal}
         if self.target:
             attributes["target"] = self.target
-        element = ElementTree.Element(type(self).__name__, **attributes)
+        element = ElementTree.Element(type(self).__name__, attributes)
         return element
 
 
@@ -1655,7 +1661,7 @@ class Source(BaseNode):
             attributes["linkedGeometry"] = self.linked_geometry
         if self.type_:
             attributes["type"] = self.type_
-        element = ElementTree.Element(type(self).__name__, **attributes)
+        element = ElementTree.Element(type(self).__name__, attributes)
         element.text = self.value
         return element
 
