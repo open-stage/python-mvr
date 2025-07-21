@@ -1,5 +1,12 @@
 ### Changelog
 
+### 1.0.0-dev0
+
+* Breaking changes!
+* Big refactor of structure - ensure that XML structure is followed in code
+* Implemented all MVR fields
+* Big refactor for export
+
 #### 0.5.0
 
 * Add classing to export

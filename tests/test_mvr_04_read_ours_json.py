@@ -10,6 +10,7 @@ def test_version(mvr_scene):
 
 
 def process_mvr_child_list(child_list, mvr_scene):
+    assert len(child_list.fixtures) == 2
     for fixture in child_list.fixtures:
         process_mvr_fixture(fixture)
     for group in child_list.group_objects:
@@ -22,15 +23,16 @@ def process_mvr_child_list(child_list, mvr_scene):
 
 def process_mvr_fixture(fixture):
     assert fixture.gdtf_spec == "BlenderDMX@Basic_LED_Bulb@ver2.gdtf"
-    assert fixture.addresses[0].dmx_break == 1
-    assert fixture.addresses[0].universe == 1
+    assert fixture.addresses.address[0].dmx_break == 1
+    assert fixture.addresses.address[0].universe == 1
     assert fixture.gdtf_mode == "Standard mode"
     assert fixture.matrix.matrix[3] == [0.0, 0.0, 0.0, 0]
 
 
 @pytest.mark.parametrize("mvr_scene", [("test_json.mvr",)], indirect=True)
 def test_fixture(mvr_scene):
-    for layer in mvr_scene.layers:
+    assert len(mvr_scene.scene.layers) > 0
+    for layer in mvr_scene.scene.layers:
         assert layer.name == "Layer 1"
         assert layer.uuid == "1e4954b5-992c-4146-b71f-5b497834087f"
         process_mvr_child_list(layer.child_list, mvr_scene)

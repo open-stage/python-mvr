@@ -1,12 +1,13 @@
-from typing import List, Union, Optional
+from typing import List, Union
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 import zipfile
 import sys
 import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
+from enum import Enum
 
-__version__ = "0.5.1"
+__version__ = "1.0.0-dev0"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -26,8 +27,6 @@ class GeneralSceneDescription:
             self._package = zipfile.ZipFile(path, "r")
         if self._package is not None:
             self._root = _find_root(self._package)
-            self._user_data = self._root.find("UserData")
-            self._scene = self._root.find("Scene")
         if self._root is not None:
             self._read_xml()
 
@@ -37,21 +36,14 @@ class GeneralSceneDescription:
         self.provider: str = self._root.get("provider", "")
         self.providerVersion: str = self._root.get("providerVersion", "")
 
-        layers_collect = self._scene.find("Layers")
-        if layers_collect is not None:
-            self.layers: List["Layer"] = [Layer(xml_node=i) for i in layers_collect.findall("Layer")]
-        else:
-            self.layers = []
+        scene = self._root.find("Scene")
+        if scene is not None:
+            self.scene = Scene(xml_node=scene)
 
-        aux_data_collect = self._scene.find("AUXData")
+        user_data = self._root.find("UserData")
 
-        if aux_data_collect is not None:
-            self.aux_data = AUXData(xml_node=aux_data_collect)
-        else:
-            self.aux_data = None
-
-        if self._user_data is not None:
-            self.user_data: List["Data"] = [Data(xml_node=i) for i in self._user_data.findall("Data")]
+        if user_data is not None:
+            self.user_data = UserData(xml_node=user_data)
 
 
 class GeneralSceneDescriptionWriter:
@@ -81,23 +73,8 @@ class GeneralSceneDescriptionWriter:
                 for file_path, file_name in self.files_list:
                     try:
                         z.write(file_path, arcname=file_name)
-                    except Exception as e:
+                    except Exception:
                         print(f"File does not exist {file_path}")
-
-
-class SceneElement:
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, "Scene")
-
-
-class LayersElement:
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, "Layers")
-
-
-class UserData:
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, "UserData")
 
 
 class BaseNode:
@@ -107,6 +84,286 @@ class BaseNode:
 
     def _read_xml(self, xml_node: "Element"):
         pass
+
+
+class ContainerNode(BaseNode):
+    def __init__(self, children=None, xml_node: "Element" = None, *args, **kwargs):
+        if children is None:
+            children = []
+        self.children = children
+        super().__init__(xml_node, *args, **kwargs)
+
+    def __iter__(self):
+        return iter(self.children)
+
+    def __getitem__(self, item):
+        return self.children[item]
+
+    def append(self, child):
+        self.children.append(child)
+
+    def extend(self, children_list):
+        self.children.extend(children_list)
+
+    def insert(self, index, child):
+        self.children.insert(index, child)
+
+    def remove(self, child):
+        self.children.remove(child)
+
+    def pop(self, index=-1):
+        return self.children.pop(index)
+
+    def clear(self):
+        self.children.clear()
+
+    def __len__(self):
+        return len(self.children)
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for child in self.children:
+            element.append(child.to_xml())
+        return element
+
+
+class Protocols(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Protocol(xml_node=i) for i in xml_node.findall("Protocol")]
+
+
+class Alignments(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Alignment(xml_node=i) for i in xml_node.findall("Alignment")]
+
+
+class CustomCommands(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [CustomCommand(xml_node=i) for i in xml_node.findall("CustomCommand")]
+
+
+class Overwrites(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Overwrite(xml_node=i) for i in xml_node.findall("Overwrite")]
+
+
+class Connections(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Connection(xml_node=i) for i in xml_node.findall("Connection")]
+
+
+class Mappings(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Mapping(xml_node=i) for i in xml_node.findall("Mapping")]
+
+
+class Scene(BaseNode):
+    def __init__(
+        self,
+        layers: "Layers" = None,
+        aux_data: "AUXData" = None,
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.layers = layers
+        self.aux_data = aux_data
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.layers = Layers(xml_node=xml_node.find("Layers"))
+
+        aux_data_collect = xml_node.find("AUXData")
+
+        if aux_data_collect is not None:
+            self.aux_data = AUXData(xml_node=aux_data_collect)
+        else:
+            self.aux_data = None
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "Scene")
+        if self.layers:
+            self.layers.to_xml(element)
+        if self.aux_data:
+            self.aux_data.to_xml(element)
+        return element
+
+
+class Layers(BaseNode):
+    def __init__(
+        self,
+        layers: List["Layer"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.layers = layers
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.layers = [Layer(xml_node=i) for i in xml_node.findall("Layer")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "Layers")
+        for layer in self.layers:
+            element.append(layer.to_xml())
+        return element
+
+    def __iter__(self):
+        return iter(self.layers)
+
+    def __getitem__(self, item):
+        return self.layers[item]
+
+    def append(self, layer: "Layer"):
+        self.layers.append(layer)
+
+    def extend(self, layers: List["Layer"]):
+        self.layers.extend(layers)
+
+    def insert(self, index: int, layer: "Layer"):
+        self.layers.insert(index, layer)
+
+    def remove(self, layer: "Layer"):
+        self.layers.remove(layer)
+
+    def pop(self, index: int = -1):
+        return self.layers.pop(index)
+
+    def clear(self):
+        self.layers.clear()
+
+    def __len__(self):
+        return len(self.layers)
+
+
+class UserData(BaseNode):
+    def __init__(
+        self,
+        data: List["Data"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.data = data
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.data = [Data(xml_node=i) for i in xml_node.findall("Data")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for _data in self.data:
+            element.append(_data.to_xml())
+        return element
+
+
+class ScaleHandelingEnum(Enum):
+    SCALE_KEEP_RATIO = "ScaleKeepRatio"
+    SCALE_IGNORE_RATIO = "ScaleIgnoreRatio"
+    KEEP_SIZE_CENTER = "KeepSizeCenter"
+
+
+class ScaleHandeling(BaseNode):
+    def __init__(
+        self,
+        value: ScaleHandelingEnum = ScaleHandelingEnum.SCALE_KEEP_RATIO,
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.value = value
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        if xml_node.text:
+            try:
+                self.value = ScaleHandelingEnum(xml_node.text)
+            except ValueError:
+                self.value = ScaleHandelingEnum.SCALE_KEEP_RATIO
+        else:
+            self.value = ScaleHandelingEnum.SCALE_KEEP_RATIO
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "ScaleHandeling")
+        element.text = self.value.value
+        return element
+
+
+class Network(BaseNode):
+    def __init__(
+        self,
+        geometry: str = "",
+        ipv4: Union[str, None] = None,
+        subnetmask: Union[str, None] = None,
+        ipv6: Union[str, None] = None,
+        dhcp: bool = False,
+        hostname: Union[str, None] = None,
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.geometry = geometry
+        self.ipv4 = ipv4
+        self.subnetmask = subnetmask
+        self.ipv6 = ipv6
+        self.dhcp = dhcp
+        self.hostname = hostname
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.geometry = xml_node.attrib.get("geometry", "")
+        self.ipv4 = xml_node.attrib.get("ipv4")
+        self.subnetmask = xml_node.attrib.get("subnetmask")
+        self.ipv6 = xml_node.attrib.get("ipv6")
+        self.dhcp = xml_node.attrib.get("dhcp", "false").lower() in ("true", "1", "on")
+        self.hostname = xml_node.attrib.get("hostname")
+
+    def to_xml(self, parent: Element):
+        attributes = {"geometry": self.geometry}
+        if self.ipv4:
+            attributes["ipv4"] = self.ipv4
+        if self.subnetmask:
+            attributes["subnetmask"] = self.subnetmask
+        if self.ipv6:
+            attributes["ipv6"] = self.ipv6
+        if self.dhcp:
+            attributes["dhcp"] = "true"
+        if self.hostname:
+            attributes["hostname"] = self.hostname
+        element = ElementTree.SubElement(parent, "Network", attributes)
+        return element
+
+
+class Addresses(BaseNode):
+    def __init__(
+        self,
+        address: List["Address"] = [],
+        network: List["Network"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.address = address if address is not None else []
+        self.network = network if network is not None else []
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.address = [Address(xml_node=i) for i in xml_node.findall("Address")]
+        self.network = [Network(xml_node=i) for i in xml_node.findall("Network")]
+
+    def to_xml(self, parent: Element):
+        if not self.address and not self.network:
+            return None
+        element = ElementTree.SubElement(parent, "Addresses")
+        for dmx_address in self.address:
+            dmx_address.to_xml(element)
+        for network_address in self.network:
+            network_address.to_xml(element)
+        return element
+
+    def __len__(self):
+        return len(self.address) + len(self.network)
 
 
 class BaseChildNode(BaseNode):
@@ -121,16 +378,16 @@ class BaseChildNode(BaseNode):
         fixture_id: Union[str, None] = None,
         fixture_id_numeric: int = 0,
         unit_number: int = 0,
-        fixture_type_id: int = 0,
         custom_id: int = 0,
         custom_id_type: int = 0,
         cast_shadow: bool = False,
-        addresses: List["Address"] = [],
-        alignments: List["Alignment"] = [],
-        custom_commands: List["CustomCommand"] = [],
-        overwrites: List["Overwrite"] = [],
-        connections: List["Connection"] = [],
+        addresses: "Addresses" = None,
+        alignments: "Alignments" = None,
+        custom_commands: "CustomCommands" = None,
+        overwrites: "Overwrites" = None,
+        connections: "Connections" = None,
         child_list: Union["ChildList", None] = None,
+        multipatch: Union[str, None] = None,
         *args,
         **kwargs,
     ):
@@ -145,21 +402,22 @@ class BaseChildNode(BaseNode):
         self.fixture_id = fixture_id
         self.fixture_id_numeric = fixture_id_numeric
         self.unit_number = unit_number
-        self.fixture_type_id = fixture_type_id
         self.custom_id = custom_id
         self.custom_id_type = custom_id_type
         self.cast_shadow = cast_shadow
-        self.addresses = addresses
-        self.alignments = alignments
-        self.custom_commands = custom_commands
-        self.overwrites = overwrites
-        self.connections = connections
+        self.addresses = addresses if addresses is not None else Addresses()
+        self.alignments = alignments if alignments is not None else Alignments()
+        self.custom_commands = custom_commands if custom_commands is not None else CustomCommands()
+        self.overwrites = overwrites if overwrites is not None else Overwrites()
+        self.connections = connections if connections is not None else Connections()
         self.child_list = child_list
+        self.multipatch = multipatch
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
         self.uuid = xml_node.attrib.get("uuid")
+        self.multipatch = xml_node.attrib.get("multipatch")
         _gdtf_spec = xml_node.find("GDTFSpec")
         if _gdtf_spec is not None:
             self.gdtf_spec = _gdtf_spec.text
@@ -180,9 +438,6 @@ class BaseChildNode(BaseNode):
         if xml_node.find("UnitNumber") is not None:
             self.unit_number = int(xml_node.find("UnitNumber").text)
 
-        if xml_node.find("FixtureTypeId") is not None:
-            self.fixture_type_id = int(xml_node.find("FixtureTypeId").text or 0)
-
         if xml_node.find("CustomId") is not None:
             self.custom_id = int(xml_node.find("CustomId").text or 0)
 
@@ -190,21 +445,23 @@ class BaseChildNode(BaseNode):
             self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
 
         if xml_node.find("CastShadow") is not None:
-            self.cast_shadow = bool(xml_node.find("CastShadow").text)
+            text_value = (xml_node.find("CastShadow").text or "false").lower()
+            self.cast_shadow = text_value in ("true", "1")
 
-        if xml_node.find("Addresses") is not None:
-            self.addresses = [Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")]
-        if not len(self.addresses):
-            self.addresses = [Address(dmx_break=0, universe=0, address=0)]
+        addresses_node = xml_node.find("Addresses")
+        if addresses_node is not None:
+            self.addresses = Addresses(xml_node=addresses_node)
+        else:
+            self.addresses = Addresses()
 
         if xml_node.find("Alignments"):
-            self.alignments = [Alignment(xml_node=i) for i in xml_node.find("Alignments").findall("Alignment")]
+            self.alignments = Alignments(xml_node=xml_node.find("Alignments"))
         if xml_node.find("Connections"):
-            self.connections = [Connection(xml_node=i) for i in xml_node.find("Connections").findall("Connection")]
+            self.connections = Connections(xml_node=xml_node.find("Connections"))
         if xml_node.find("CustomCommands") is not None:
-            self.custom_commands = [CustomCommand(xml_node=i) for i in xml_node.find("CustomCommands").findall("CustomCommand")]
+            self.custom_commands = CustomCommands(xml_node=xml_node.find("CustomCommands"))
         if xml_node.find("Overwrites"):
-            self.overwrites = [Overwrite(xml_node=i) for i in xml_node.find("Overwrites").findall("Overwrite")]
+            self.overwrites = Overwrites(xml_node=xml_node.find("Overwrites"))
         if xml_node.find("Classing") is not None:
             self.classing = xml_node.find("Classing").text
 
@@ -212,6 +469,44 @@ class BaseChildNode(BaseNode):
 
     def __str__(self):
         return f"{self.name}"
+
+    def populate_xml(self, element: Element):
+        Matrix(self.matrix.matrix).to_xml(element)
+        if self.classing:
+            ElementTree.SubElement(element, "Classing").text = self.classing
+        if self.gdtf_spec:
+            ElementTree.SubElement(element, "GDTFSpec").text = self.gdtf_spec
+        if self.gdtf_mode:
+            ElementTree.SubElement(element, "GDTFMode").text = self.gdtf_mode
+        if self.cast_shadow:
+            ElementTree.SubElement(element, "CastShadow").text = "true"
+
+        if self.addresses:
+            self.addresses.to_xml(element)
+
+        if self.alignments:
+            self.alignments.to_xml(element)
+
+        if self.custom_commands:
+            self.custom_commands.to_xml(element)
+
+        if self.overwrites:
+            self.overwrites.to_xml(element)
+
+        if self.connections:
+            self.connections.to_xml(element)
+
+        ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
+        ElementTree.SubElement(element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
+        if self.unit_number is not None:
+            ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
+        if self.custom_id_type is not None:
+            ElementTree.SubElement(element, "CustomIdType").text = str(self.custom_id_type)
+        if self.custom_id is not None:
+            ElementTree.SubElement(element, "CustomId").text = str(self.custom_id)
+
+        if self.child_list:
+            self.child_list.to_xml(element)
 
 
 class BaseChildNodeExtended(BaseChildNode):
@@ -236,12 +531,17 @@ class BaseChildNodeExtended(BaseChildNode):
     def __str__(self):
         return f"{self.name}"
 
+    def populate_xml(self, element: Element):
+        super().populate_xml(element)
+        if self.geometries:
+            self.geometries.to_xml(element)
+
 
 class Data(BaseNode):
     def __init__(
         self,
         provider: str = "",
-        ver: str = "",
+        ver: str = "1",
         *args,
         **kwargs,
     ):
@@ -255,6 +555,10 @@ class Data(BaseNode):
 
     def __str__(self):
         return f"{self.provider} {self.ver}"
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        return ElementTree.Element(type(self).__name__, provider=self.provider, ver=self.ver)
 
 
 class AUXData(BaseNode):
@@ -283,6 +587,12 @@ class AUXData(BaseNode):
         element = ElementTree.SubElement(parent, type(self).__name__)
         for _class in self.classes:
             element.append(_class.to_xml())
+        for symdef in self.symdefs:
+            element.append(symdef.to_xml())
+        for position in self.positions:
+            element.append(position.to_xml())
+        for mapping_definition in self.mapping_definitions:
+            element.append(mapping_definition.to_xml())
         return element
 
 
@@ -294,7 +604,7 @@ class MappingDefinition(BaseNode):
         size_x: int = 0,
         size_y: int = 0,
         source=None,
-        scale_handling=None,
+        scale_handling: "ScaleHandeling" = None,
         *args,
         **kwargs,
     ):
@@ -303,21 +613,35 @@ class MappingDefinition(BaseNode):
         self.size_x = size_x
         self.size_y = size_y
         self.source = source
-        self.scale_handling = scale_handling
+        self.scale_handling = scale_handling if scale_handling is not None else ScaleHandeling()
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
+        self.name = xml_node.attrib.get("name")
+        self.uuid = xml_node.attrib.get("uuid")
         # TODO handle missing data...
         self.size_x = int(xml_node.find("SizeX").text)
         self.size_y = int(xml_node.find("SizeY").text)
-        self.source = xml_node.find("Source")  # TODO
-        self.scale_handling = xml_node.find("ScaleHandeling").text  # TODO ENUM
+        source_node = xml_node.find("Source")
+        if source_node is not None:
+            self.source = Source(xml_node=source_node)
+        scale_handling_node = xml_node.find("ScaleHandeling")
+        if scale_handling_node is not None:
+            self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        ElementTree.SubElement(element, "SizeX").text = str(self.size_x)
+        ElementTree.SubElement(element, "SizeY").text = str(self.size_y)
+        if self.scale_handling:
+            self.scale_handling.to_xml(element)
+        # TODO source
+        return element
 
 
 class Fixture(BaseChildNode):
     def __init__(
         self,
-        multipatch: Union[str, None] = None,
         focus: Union[str, None] = None,
         color: Union["Color", str, None] = Color(),
         dmx_invert_pan: bool = False,
@@ -325,13 +649,13 @@ class Fixture(BaseChildNode):
         position: Union[str, None] = None,
         function_: Union[str, None] = None,
         child_position: Union[str, None] = None,
-        protocols: List["Protocol"] = [],
-        mappings: List["Mapping"] = [],
+        protocols: "Protocols" = None,
+        mappings: "Mappings" = None,
         gobo: Union["Gobo", None] = None,
+        unit_number: int = 0,
         *args,
         **kwargs,
     ):
-        self.multipatch = multipatch
         self.focus = focus
         self.color = color
         self.dmx_invert_pan = dmx_invert_pan
@@ -339,16 +663,14 @@ class Fixture(BaseChildNode):
         self.position = position
         self.function_ = function_
         self.child_position = child_position
-        self.protocols = protocols
-        self.mappings = mappings
+        self.protocols = protocols if protocols is not None else Protocols()
+        self.mappings = mappings if mappings is not None else Mappings()
         self.gobo = gobo
+        self.unit_number = unit_number
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
-
-        if xml_node.attrib.get("multipatch") is not None:
-            self.multipatch = xml_node.attrib.get("multipatch")
 
         if xml_node.find("Focus") is not None:
             self.focus = xml_node.find("Focus").text
@@ -357,54 +679,67 @@ class Fixture(BaseChildNode):
             self.color = Color(str_repr=xml_node.find("Color").text)
 
         if xml_node.find("DMXInvertPan") is not None:
-            self.dmx_invert_pan = bool(xml_node.find("DMXInvertPan").text)
+            text_value = (xml_node.find("DMXInvertPan").text or "false").lower()
+            self.dmx_invert_pan = text_value in ("true", "1")
 
         if xml_node.find("DMXInvertTilt") is not None:
-            self.dmx_invert_tilt = bool(xml_node.find("DMXInvertTilt").text)
+            text_value = (xml_node.find("DMXInvertTilt").text or "false").lower()
+            self.dmx_invert_tilt = text_value in ("true", "1")
 
         if xml_node.find("Position") is not None:
             self.position = xml_node.find("Position").text
 
         if xml_node.find("Function") is not None:
-            self.function_ = xml_node.find("Position").text
+            self.function_ = xml_node.find("Function").text
 
         if xml_node.find("ChildPosition") is not None:
             self.child_position = xml_node.find("ChildPosition").text
 
         if xml_node.find("Protocols"):
-            self.protocols = [Protocol(xml_node=i) for i in xml_node.find("Protocols").findall("Protocol")]
+            self.protocols = Protocols(xml_node=xml_node.find("Protocols"))
         if xml_node.find("Mappings") is not None:
-            self.mappings = [Mapping(xml_node=i) for i in xml_node.find("Mappings").findall("Mapping")]
+            self.mappings = Mappings(xml_node=xml_node.find("Mappings"))
         if xml_node.find("Gobo") is not None:
-            self.gobo = Gobo(xml_node.attrib.get("Gobo"))
+            self.gobo = Gobo(xml_node=xml_node.find("Gobo"))
+        if xml_node.find("UnitNumber") is not None:
+            self.unit_number = int(xml_node.find("UnitNumber").text)
 
     def to_xml(self):
-        fixture_element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
 
-        Matrix(self.matrix.matrix).to_xml(fixture_element)
-        ElementTree.SubElement(fixture_element, "GDTFSpec").text = self.gdtf_spec
-        ElementTree.SubElement(fixture_element, "GDTFMode").text = self.gdtf_mode
-        if self.focus is not None:
-            ElementTree.SubElement(fixture_element, "Focus").text = self.focus
+        if self.focus:
+            ElementTree.SubElement(element, "Focus").text = self.focus
+        if self.dmx_invert_pan:
+            ElementTree.SubElement(element, "DMXInvertPan").text = "true"
+        if self.dmx_invert_tilt:
+            ElementTree.SubElement(element, "DMXInvertTilt").text = "true"
+        if self.position:
+            ElementTree.SubElement(element, "Position").text = self.position
+        if self.function_:
+            ElementTree.SubElement(element, "Function").text = self.function_
+        if self.child_position:
+            ElementTree.SubElement(element, "ChildPosition").text = self.child_position
 
-        ElementTree.SubElement(fixture_element, "FixtureID").text = str(self.fixture_id) or "0"
-        ElementTree.SubElement(fixture_element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
-        ElementTree.SubElement(fixture_element, "UnitNumber").text = str(self.unit_number)
-        if self.classing is not None:
-            ElementTree.SubElement(fixture_element, "Classing").text = str(self.classing)
-        if self.custom_id:
-            ElementTree.SubElement(fixture_element, "CustomId").text = str(self.custom_id)
-        if self.custom_id_type:
-            ElementTree.SubElement(fixture_element, "CustomIdType").text = str(self.custom_id_type)
+        if len(self.protocols) > 0:
+            self.protocols.to_xml(element)
+
         if isinstance(self.color, Color):
-            self.color.to_xml(fixture_element)
-        else:
-            Color(str_repr=self.color).to_xml(fixture_element)
+            self.color.to_xml(element)
+        elif self.color:
+            Color(str_repr=self.color).to_xml(element)
 
-        addresses = ElementTree.SubElement(fixture_element, "Addresses")
-        for address in self.addresses:
-            Address(address.dmx_break, address.universe, address.address).to_xml(addresses)
-        return fixture_element
+        if len(self.mappings) > 0:
+            self.mappings.to_xml(element)
+        if self.gobo:
+            element.append(self.gobo.to_xml())
+
+        ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
+
+        return element
 
     def __str__(self):
         return f"{self.name}"
@@ -440,6 +775,15 @@ class GroupObject(BaseNode):
 
     def __str__(self):
         return f"{self.name}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.classing:
+            ElementTree.SubElement(element, "Classing").text = self.classing
+        if self.child_list:
+            self.child_list.to_xml(parent=element)
+        return element
 
 
 class ChildList(BaseNode):
@@ -515,7 +859,24 @@ class ChildList(BaseNode):
         self.projectors = [Projector(xml_node=i) for i in xml_node.findall("Projector")]
 
     def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, type(self).__name__)
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for fixture in self.fixtures:
+            element.append(fixture.to_xml())
+        for focus_point in self.focus_points:
+            element.append(focus_point.to_xml())
+        for group_object in self.group_objects:
+            element.append(group_object.to_xml())
+        for scene_object in self.scene_objects:
+            element.append(scene_object.to_xml())
+        for support in self.supports:
+            element.append(support.to_xml())
+        for truss in self.trusses:
+            element.append(truss.to_xml())
+        for video_screen in self.video_screens:
+            element.append(video_screen.to_xml())
+        for projector in self.projectors:
+            element.append(projector.to_xml())
+        return element
 
 
 class Layer(BaseNode):
@@ -545,8 +906,12 @@ class Layer(BaseNode):
         if xml_node.find("Matrix") is not None:
             self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
 
-    def to_xml(self, parent: Element):
-        return ElementTree.SubElement(parent, type(self).__name__, name=self.name, uuid=self.uuid)
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.child_list:
+            self.child_list.to_xml(parent=element)
+        return element
 
     def __str__(self):
         return f"{self.name}"
@@ -640,6 +1005,10 @@ class Position(BaseNode):
     def __str__(self):
         return f"{self.name}"
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        return element
+
 
 class Symdef(BaseNode):
     def __init__(
@@ -661,18 +1030,24 @@ class Symdef(BaseNode):
         self.name = xml_node.attrib.get("name")
         self.uuid = xml_node.attrib.get("uuid")
 
-        self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
-        _geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
-        if xml_node.find("ChildList") is not None:
-            child_list = xml_node.find("ChildList")
-
-            symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
-            geometry3ds = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
-            self.symbol += symbols
-            _geometry3d += geometry3ds
+        child_list = xml_node.find("ChildList")
+        if child_list is not None:
+            self.symbol = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
+            _geometry3d = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
+        else:
+            self.symbol = []
+            _geometry3d = []
 
         # sometimes the list of geometry3d is full of duplicates, eliminate them here
         self.geometry3d = list(set(_geometry3d))
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        for geo in self.geometry3d:
+            element.append(geo.to_xml())
+        for sym in self.symbol:
+            element.append(sym.to_xml())
+        return element
 
 
 class Geometry3D(BaseNode):
@@ -707,6 +1082,11 @@ class Geometry3D(BaseNode):
     def __hash__(self):
         return hash((self.file_name, str(self.matrix)))
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, fileName=self.file_name)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        return element
+
 
 class Symbol(BaseNode):
     def __init__(
@@ -731,6 +1111,11 @@ class Symbol(BaseNode):
     def __str__(self):
         return f"{self.uuid}"
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, uuid=self.uuid, symdef=self.symdef)
+        Matrix(self.matrix.matrix).to_xml(parent=element)
+        return element
+
 
 class Geometries(BaseNode):
     def __init__(
@@ -747,16 +1132,13 @@ class Geometries(BaseNode):
     def _read_xml(self, xml_node: "Element"):
         self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
         self.geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
-        if xml_node.find("ChildList"):
-            child_list = xml_node.find("ChildList")
-
-            symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
-            geometry3ds = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
-            self.symbol += symbols  # TODO remove this over time, children should only be in child_list
-            self.geometry3d += geometry3ds
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
+        for geo in self.geometry3d:
+            element.append(geo.to_xml())
+        for sym in self.symbol:
+            element.append(sym.to_xml())
         return element
 
 
@@ -775,6 +1157,8 @@ class FocusPoint(BaseNode):
         self.uuid = uuid
         self.matrix = matrix
         self.classing = classing
+        if geometries is None:
+            geometries = Geometries()
         self.geometries = geometries
 
         super().__init__(*args, **kwargs)
@@ -795,46 +1179,138 @@ class FocusPoint(BaseNode):
     def to_xml(self):
         element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
         Matrix(self.matrix.matrix).to_xml(parent=element)
-        Geometries().to_xml(parent=element)
+        if self.classing:
+            ElementTree.SubElement(element, "Classing").text = self.classing
+        self.geometries.to_xml(parent=element)
         return element
 
 
 class SceneObject(BaseChildNodeExtended):
-    pass
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
+        return element
 
 
 class Truss(BaseChildNodeExtended):
-    pass
+    def __init__(
+        self,
+        position: Union[str, None] = None,
+        function_: Union[str, None] = None,
+        child_position: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.position = position
+        self.function_ = function_
+        self.child_position = child_position
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        super()._read_xml(xml_node)
+        if xml_node.find("Position") is not None:
+            self.position = xml_node.find("Position").text
+        if xml_node.find("Function") is not None:
+            self.function_ = xml_node.find("Function").text
+        if xml_node.find("ChildPosition") is not None:
+            self.child_position = xml_node.find("ChildPosition").text
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
+        if self.position:
+            ElementTree.SubElement(element, "Position").text = self.position
+        if self.function_:
+            ElementTree.SubElement(element, "Function").text = self.function_
+        if self.child_position:
+            ElementTree.SubElement(element, "ChildPosition").text = self.child_position
+        return element
 
 
 class Support(BaseChildNodeExtended):
     def __init__(
         self,
         chain_length: float = 0,
+        position: Union[str, None] = None,
+        function_: Union[str, None] = None,
         *args,
         **kwargs,
     ):
         self.chain_length = chain_length
+        self.position = position
+        self.function_ = function_
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        if xml_node.find("ChainLength") is None:
-            self.chain_length = float(xml_node.find("ChainLength").text or 0)
+        super()._read_xml(xml_node)
+        chain_length_node = xml_node.find("ChainLength")
+        if chain_length_node is not None:
+            self.chain_length = float(chain_length_node.text or 0)
+
+        position_node = xml_node.find("Position")
+        if position_node is not None:
+            self.position = position_node.text
+
+        function_node = xml_node.find("Function")
+        if function_node is not None:
+            self.function_ = function_node.text
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
+
+        if self.position:
+            ElementTree.SubElement(element, "Position").text = self.position
+
+        if self.function_:
+            ElementTree.SubElement(element, "Function").text = self.function_
+
+        ElementTree.SubElement(element, "ChainLength").text = str(self.chain_length)
+
+        return element
 
 
 class VideoScreen(BaseChildNodeExtended):
     def __init__(
         self,
         sources: "Sources" = None,
+        function_: Union[str, None] = None,
         *args,
         **kwargs,
     ):
         self.sources = sources
+        self.function_ = function_
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        if xml_node.find("Sources") is None:
+        super()._read_xml(xml_node)
+        if xml_node.find("Sources") is not None:
             self.sources = Sources(xml_node=xml_node.find("Sources"))
+        if xml_node.find("Function") is not None:
+            self.function_ = xml_node.find("Function").text
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
+
+        if self.sources:
+            self.sources.to_xml(element)
+        if self.function_:
+            ElementTree.SubElement(element, "Function").text = self.function_
+
+        return element
 
 
 class Projector(BaseChildNodeExtended):
@@ -848,14 +1324,27 @@ class Projector(BaseChildNodeExtended):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        if xml_node.find("Projections") is None:
-            self.projections = Projections(xml_node.find("Projections"))
+        super()._read_xml(xml_node)
+        if xml_node.find("Projections") is not None:
+            self.projections = Projections(xml_node=xml_node.find("Projections"))
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, attributes)
+        self.populate_xml(element)
+
+        if self.projections:
+            self.projections.to_xml(element)
+
+        return element
 
 
 class Protocol(BaseNode):
     def __init__(
         self,
-        geometry: Union[str, None] = None,
+        geometry: Union[str, None] = "NetworkInOut_1",
         name: Union[str, None] = None,
         type_: Union[str, None] = None,
         version: Union[str, None] = None,
@@ -880,11 +1369,26 @@ class Protocol(BaseNode):
     def __str__(self):
         return f"{self.name}"
 
+    def to_xml(self):
+        attributes = {}
+        if self.geometry:
+            attributes["geometry"] = self.geometry
+        if self.name:
+            attributes["name"] = self.name
+        if self.type:
+            attributes["type"] = self.type
+        if self.version:
+            attributes["version"] = self.version
+        if self.transmission:
+            attributes["transmission"] = self.transmission
+        element = ElementTree.Element(type(self).__name__, attributes)
+        return element
+
 
 class Alignment(BaseNode):
     def __init__(
         self,
-        geometry: Union[str, None] = None,
+        geometry: Union[str, None] = "Beam",
         up: Union[str, None] = "0,0,1",
         direction: Union[str, None] = "0,0,-1",
         *args,
@@ -902,6 +1406,17 @@ class Alignment(BaseNode):
 
     def __str__(self):
         return f"{self.geometry}"
+
+    def to_xml(self):
+        attributes = {}
+        if self.geometry:
+            attributes["geometry"] = self.geometry
+        if self.up:
+            attributes["up"] = self.up
+        if self.direction:
+            attributes["direction"] = self.direction
+        element = ElementTree.Element(type(self).__name__, attributes)
+        return element
 
 
 class Overwrite(BaseNode):
@@ -922,6 +1437,13 @@ class Overwrite(BaseNode):
 
     def __str__(self):
         return f"{self.universal} {self.target}"
+
+    def to_xml(self):
+        attributes = {"universal": self.universal}
+        if self.target:
+            attributes["target"] = self.target
+        element = ElementTree.Element(type(self).__name__, attributes)
+        return element
 
 
 class Connection(BaseNode):
@@ -946,6 +1468,15 @@ class Connection(BaseNode):
     def __str__(self):
         return f"{self.own} {self.other}"
 
+    def to_xml(self):
+        element = ElementTree.Element(
+            type(self).__name__,
+            own=self.own,
+            other=self.other,
+            toObject=self.to_object,
+        )
+        return element
+
 
 class Mapping(BaseNode):
     def __init__(
@@ -955,7 +1486,7 @@ class Mapping(BaseNode):
         uy: Union[int, None] = None,
         ox: Union[int, None] = None,
         oy: Union[int, None] = None,
-        rz: Union[int, None] = None,
+        rz: Union[float, None] = None,
         *args,
         **kwargs,
     ):
@@ -969,14 +1500,38 @@ class Mapping(BaseNode):
 
     def _read_xml(self, xml_node: "Element"):
         self.link_def = xml_node.attrib.get("linkedDef")
-        self.ux = int(xml_node.find("ux").text)
-        self.uy = int(xml_node.find("uy").text)
-        self.ox = int(xml_node.find("ox").text)
-        self.oy = int(xml_node.find("oy").text)
-        self.rz = int(xml_node.find("rz").text)
+        ux_node = xml_node.find("ux")
+        if ux_node is not None:
+            self.ux = int(ux_node.text)
+        uy_node = xml_node.find("uy")
+        if uy_node is not None:
+            self.uy = int(uy_node.text)
+        ox_node = xml_node.find("ox")
+        if ox_node is not None:
+            self.ox = int(ox_node.text)
+        oy_node = xml_node.find("oy")
+        if oy_node is not None:
+            self.oy = int(oy_node.text)
+        rz_node = xml_node.find("rz")
+        if rz_node is not None:
+            self.rz = float(rz_node.text)
 
     def __str__(self):
         return f"{self.link_def}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, linkedDef=self.link_def)
+        if self.ux is not None:
+            ElementTree.SubElement(element, "ux").text = str(self.ux)
+        if self.uy is not None:
+            ElementTree.SubElement(element, "uy").text = str(self.uy)
+        if self.ox is not None:
+            ElementTree.SubElement(element, "ox").text = str(self.ox)
+        if self.oy is not None:
+            ElementTree.SubElement(element, "oy").text = str(self.oy)
+        if self.rz is not None:
+            ElementTree.SubElement(element, "rz").text = str(self.rz)
+        return element
 
 
 class Gobo(BaseNode):
@@ -984,12 +1539,13 @@ class Gobo(BaseNode):
         self,
         rotation: Union[str, float, None] = None,
         filename: Union[str, None] = None,
+        xml_node: "Element" = None,
         *args,
         **kwargs,
     ):
         self.rotation = rotation
         self.filename = filename
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.rotation = float(xml_node.attrib.get("rotation", 0))
@@ -997,6 +1553,11 @@ class Gobo(BaseNode):
 
     def __str__(self):
         return f"{self.filename} {self.rotation}"
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__, rotation=str(self.rotation))
+        element.text = self.filename
+        return element
 
 
 class CustomCommand(BaseNode):
@@ -1016,27 +1577,111 @@ class CustomCommand(BaseNode):
     def __str__(self):
         return f"{self.custom_command}"
 
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__)
+        element.text = self.custom_command
+        return element
+
+
+class Projection(BaseNode):
+    def __init__(
+        self,
+        source: "Source" = None,
+        scale_handling: "ScaleHandeling" = None,
+        *args,
+        **kwargs,
+    ):
+        self.source = source
+        self.scale_handling = scale_handling if scale_handling is not None else ScaleHandeling()
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        if xml_node.find("Source") is not None:
+            self.source = Source(xml_node=xml_node.find("Source"))
+        scale_handling_node = xml_node.find("ScaleHandeling")
+        if scale_handling_node is not None:
+            self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
+
+    def to_xml(self):
+        element = ElementTree.Element(type(self).__name__)
+        if self.source:
+            element.append(self.source.to_xml())
+        if self.scale_handling:
+            self.scale_handling.to_xml(element)
+        return element
+
 
 class Projections(BaseNode):
-    ...
-    # todo
+    def __init__(
+        self,
+        projections: List["Projection"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.projections = projections
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.projections = [Projection(xml_node=i) for i in xml_node.findall("Projection")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for projection in self.projections:
+            element.append(projection.to_xml())
+        return element
 
 
-class Sources(BaseNode):
+class Source(BaseNode):
     def __init__(
         self,
         linked_geometry: Union[str, None] = None,
         type_: Union[str, None] = None,
+        value: Union[str, None] = None,
+        xml_node: "Element" = None,
         *args,
         **kwargs,
     ):
         self.linked_geometry = linked_geometry
         self.type_ = type_
-        super().__init__(*args, **kwargs)
+        self.value = value
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.linked_geometry = xml_node.attrib.get("linkedGeometry")
         self.type_ = xml_node.attrib.get("type")
+        self.value = xml_node.text
 
     def __str__(self):
         return f"{self.linked_geometry} {self.type_}"
+
+    def to_xml(self):
+        attributes = {}
+        if self.linked_geometry:
+            attributes["linkedGeometry"] = self.linked_geometry
+        if self.type_:
+            attributes["type"] = self.type_
+        element = ElementTree.Element(type(self).__name__, attributes)
+        element.text = self.value
+        return element
+
+
+class Sources(BaseNode):
+    def __init__(
+        self,
+        sources: List["Source"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.sources = sources
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.sources = [Source(xml_node=i) for i in xml_node.findall("Source")]
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for source in self.sources:
+            element.append(source.to_xml())
+        return element
