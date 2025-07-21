@@ -43,29 +43,49 @@ for layer_index, layer in enumerate(mvr_file.scene.layers):
 ### Writing
 
 ```python
+import pymvr
+from pathlib import Path
 
-mvr = pymvr.GeneralSceneDescriptionWriter()
-pymvr.UserData().to_xml(parent=mvr.xml_root)
-scene = pymvr.Scene().to_xml(parent=mvr.xml_root)
-pymvr.AUXData().to_xml(parent=scene)
-fixtures_list = []
+# 1. Create a writer instance
+mvr_writer = pymvr.GeneralSceneDescriptionWriter()
 
+# 2. Build the MVR object tree
+# Create a scene object
+scene_obj = pymvr.Scene()
+
+# Create layers and add them to the scene
 layers = pymvr.Layers()
-layer = pymvr.Layer(name="Test layer")
-layers.layers.append(layer)
+scene_obj.layers = layers
 
+# Create a layer and add it to the layers
+layer = pymvr.Layer(name="Test layer")
+layers.append(layer)
+
+# Create a child list for the layer
 child_list = pymvr.ChildList()
 layer.child_list = child_list
 
-fixture = pymvr.Fixture(name="Test Fixture")  # not really a valid fixture
+# Create a fixture and add it to the child list
+# Note: A valid fixture would require more attributes
+fixture = pymvr.Fixture(name="Test Fixture")
 child_list.fixtures.append(fixture)
-fixtures_list.append((fixture.gdtf_spec, fixture.gdtf_spec))
 
-layers.to_xml(parent=scene)
+# 3. Serialize the scene object into the writer's XML root
+scene_obj.to_xml(parent=mvr_writer.xml_root)
 
-mvr.files_list = list(set(fixtures_list))
-test_file_path = Path(Path(__file__).parent, "example.mvr")
-mvr.write_mvr(test_file_path)
+# 4. Add any necessary files (like GDTF) to the MVR archive
+# (This example fixture doesn't have a GDTF file, so this list will be empty)
+files_to_pack = []
+if fixture.gdtf_spec:
+    # The list should contain tuples of (source_path, archive_name)
+    files_to_pack.append((fixture.gdtf_spec, fixture.gdtf_spec))
+mvr_writer.files_list = list(set(files_to_pack))
+
+# 5. Write the MVR file
+output_path = Path("example.mvr")
+mvr_writer.write_mvr(output_path)
+
+print(f"MVR file written to {output_path.resolve()}")
 ```
 
 See [BlenderDMX](https://github.com/open-stage/blender-dmx) and
@@ -74,41 +94,7 @@ reference implementation.
 
 ## Status
 
-- Reading:
-
-  - Address
-  - Alignment
-  - AUXData
-  - ChildList
-  - Class
-  - Connection
-  - CustomCommand
-  - Data
-  - Fixture
-  - FocusPoint
-  - Geometries
-  - Geometry3D
-  - Gobo
-  - GroupObject
-  - Layer
-  - Mapping
-  - Overwrite
-  - Position
-  - Projector
-  - Protocol
-  - SceneObject
-  - Sources
-  - Support
-  - Symbol
-  - Symdef
-  - Truss
-  - UserData
-  - VideoScreen
-
-- Writing:
-  - Fixture
-  - Focus point
-  - creating MVR zip file
+- Reading and Writing of all aspects of MVR should be covered.
 
 ## Development
 
