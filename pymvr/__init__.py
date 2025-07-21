@@ -1149,6 +1149,15 @@ class Connection(BaseNode):
     def __str__(self):
         return f"{self.own} {self.other}"
 
+    def to_xml(self):
+        element = ElementTree.Element(
+            type(self).__name__,
+            own=self.own,
+            other=self.other,
+            toObject=self.to_object,
+        )
+        return element
+
 
 class Mapping(BaseNode):
     def __init__(
