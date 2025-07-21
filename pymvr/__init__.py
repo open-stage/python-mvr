@@ -620,10 +620,14 @@ class MappingDefinition(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
+        self.name = xml_node.attrib.get("name")
+        self.uuid = xml_node.attrib.get("uuid")
         # TODO handle missing data...
         self.size_x = int(xml_node.find("SizeX").text)
         self.size_y = int(xml_node.find("SizeY").text)
-        self.source = xml_node.find("Source")  # TODO
+        source_node = xml_node.find("Source")
+        if source_node is not None:
+            self.source = Source(xml_node=source_node)
         scale_handling_node = xml_node.find("ScaleHandeling")
         if scale_handling_node is not None:
             self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
@@ -1023,15 +1027,13 @@ class Symdef(BaseNode):
         self.name = xml_node.attrib.get("name")
         self.uuid = xml_node.attrib.get("uuid")
 
-        self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
-        _geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
-        if xml_node.find("ChildList") is not None:
-            child_list = xml_node.find("ChildList")
-
-            symbols = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
-            geometry3ds = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
-            self.symbol += symbols
-            _geometry3d += geometry3ds
+        child_list = xml_node.find("ChildList")
+        if child_list is not None:
+            self.symbol = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
+            _geometry3d = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
+        else:
+            self.symbol = []
+            _geometry3d = []
 
         # sometimes the list of geometry3d is full of duplicates, eliminate them here
         self.geometry3d = list(set(_geometry3d))
@@ -1192,7 +1194,42 @@ class SceneObject(BaseChildNodeExtended):
 
 
 class Truss(BaseChildNodeExtended):
-    pass
+    def __init__(
+        self,
+        position: Union[str, None] = None,
+        function_: Union[str, None] = None,
+        child_position: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ):
+        self.position = position
+        self.function_ = function_
+        self.child_position = child_position
+        super().__init__(*args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        super()._read_xml(xml_node)
+        if xml_node.find("Position") is not None:
+            self.position = xml_node.find("Position").text
+        if xml_node.find("Function") is not None:
+            self.function_ = xml_node.find("Function").text
+        if xml_node.find("ChildPosition") is not None:
+            self.child_position = xml_node.find("ChildPosition").text
+
+    def to_xml(self):
+        attributes = {"name": self.name, "uuid": self.uuid}
+        if self.multipatch:
+            attributes["multipatch"] = self.multipatch
+        element = ElementTree.Element(type(self).__name__, **attributes)
+        super().to_xml(element)
+        if self.position:
+            ElementTree.SubElement(element, "Position").text = self.position
+        if self.function_:
+            ElementTree.SubElement(element, "Function").text = self.function_
+        if self.child_position:
+            ElementTree.SubElement(element, "ChildPosition").text = self.child_position
+        return element
+
 
 
 class Support(BaseChildNodeExtended):
