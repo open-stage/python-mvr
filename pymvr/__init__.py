@@ -86,6 +86,77 @@ class BaseNode:
         pass
 
 
+class ContainerNode(BaseNode):
+    def __init__(self, children=None, xml_node: "Element" = None, *args, **kwargs):
+        if children is None:
+            children = []
+        self.children = children
+        super().__init__(xml_node, *args, **kwargs)
+
+    def __iter__(self):
+        return iter(self.children)
+
+    def __getitem__(self, item):
+        return self.children[item]
+
+    def append(self, child):
+        self.children.append(child)
+
+    def extend(self, children_list):
+        self.children.extend(children_list)
+
+    def insert(self, index, child):
+        self.children.insert(index, child)
+
+    def remove(self, child):
+        self.children.remove(child)
+
+    def pop(self, index=-1):
+        return self.children.pop(index)
+
+    def clear(self):
+        self.children.clear()
+
+    def __len__(self):
+        return len(self.children)
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, type(self).__name__)
+        for child in self.children:
+            element.append(child.to_xml())
+        return element
+
+
+class Protocols(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Protocol(xml_node=i) for i in xml_node.findall("Protocol")]
+
+
+class Alignments(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Alignment(xml_node=i) for i in xml_node.findall("Alignment")]
+
+
+class CustomCommands(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [CustomCommand(xml_node=i) for i in xml_node.findall("CustomCommand")]
+
+
+class Overwrites(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Overwrite(xml_node=i) for i in xml_node.findall("Overwrite")]
+
+
+class Connections(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Connection(xml_node=i) for i in xml_node.findall("Connection")]
+
+
+class Mappings(ContainerNode):
+    def _read_xml(self, xml_node: "Element"):
+        self.children = [Mapping(xml_node=i) for i in xml_node.findall("Mapping")]
+
+
 class Scene(BaseNode):
     def __init__(
         self,
@@ -311,10 +382,10 @@ class BaseChildNode(BaseNode):
         custom_id_type: int = 0,
         cast_shadow: bool = False,
         addresses: "Addresses" = None,
-        alignments: List["Alignment"] = [],
-        custom_commands: List["CustomCommand"] = [],
-        overwrites: List["Overwrite"] = [],
-        connections: List["Connection"] = [],
+        alignments: "Alignments" = None,
+        custom_commands: "CustomCommands" = None,
+        overwrites: "Overwrites" = None,
+        connections: "Connections" = None,
         child_list: Union["ChildList", None] = None,
         multipatch: Union[str, None] = None,
         *args,
@@ -335,10 +406,10 @@ class BaseChildNode(BaseNode):
         self.custom_id_type = custom_id_type
         self.cast_shadow = cast_shadow
         self.addresses = addresses if addresses is not None else Addresses()
-        self.alignments = alignments
-        self.custom_commands = custom_commands
-        self.overwrites = overwrites
-        self.connections = connections
+        self.alignments = alignments if alignments is not None else Alignments()
+        self.custom_commands = custom_commands if custom_commands is not None else CustomCommands()
+        self.overwrites = overwrites if overwrites is not None else Overwrites()
+        self.connections = connections if connections is not None else Connections()
         self.child_list = child_list
         self.multipatch = multipatch
         super().__init__(*args, **kwargs)
@@ -387,13 +458,13 @@ class BaseChildNode(BaseNode):
             self.addresses.address.append(Address(dmx_break=0, universe=0, address=0))
 
         if xml_node.find("Alignments"):
-            self.alignments = [Alignment(xml_node=i) for i in xml_node.find("Alignments").findall("Alignment")]
+            self.alignments = Alignments(xml_node=xml_node.find("Alignments"))
         if xml_node.find("Connections"):
-            self.connections = [Connection(xml_node=i) for i in xml_node.find("Connections").findall("Connection")]
+            self.connections = Connections(xml_node=xml_node.find("Connections"))
         if xml_node.find("CustomCommands") is not None:
-            self.custom_commands = [CustomCommand(xml_node=i) for i in xml_node.find("CustomCommands").findall("CustomCommand")]
+            self.custom_commands = CustomCommands(xml_node=xml_node.find("CustomCommands"))
         if xml_node.find("Overwrites"):
-            self.overwrites = [Overwrite(xml_node=i) for i in xml_node.find("Overwrites").findall("Overwrite")]
+            self.overwrites = Overwrites(xml_node=xml_node.find("Overwrites"))
         if xml_node.find("Classing") is not None:
             self.classing = xml_node.find("Classing").text
 
@@ -417,24 +488,16 @@ class BaseChildNode(BaseNode):
             self.addresses.to_xml(element)
 
         if self.alignments:
-            alignments_element = ElementTree.SubElement(element, "Alignments")
-            for alignment in self.alignments:
-                alignments_element.append(alignment.to_xml())
+            self.alignments.to_xml(element)
 
         if self.custom_commands:
-            commands_element = ElementTree.SubElement(element, "CustomCommands")
-            for command in self.custom_commands:
-                commands_element.append(command.to_xml())
+            self.custom_commands.to_xml(element)
 
         if self.overwrites:
-            overwrites_element = ElementTree.SubElement(element, "Overwrites")
-            for overwrite in self.overwrites:
-                overwrites_element.append(overwrite.to_xml())
+            self.overwrites.to_xml(element)
 
         if self.connections:
-            connections_element = ElementTree.SubElement(element, "Connections")
-            for connection in self.connections:
-                connections_element.append(connection.to_xml())
+            self.connections.to_xml(element)
 
         ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
         ElementTree.SubElement(element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
@@ -585,8 +648,8 @@ class Fixture(BaseChildNode):
         position: Union[str, None] = None,
         function_: Union[str, None] = None,
         child_position: Union[str, None] = None,
-        protocols: List["Protocol"] = [],
-        mappings: List["Mapping"] = [],
+        protocols: "Protocols" = None,
+        mappings: "Mappings" = None,
         gobo: Union["Gobo", None] = None,
         *args,
         **kwargs,
@@ -598,8 +661,8 @@ class Fixture(BaseChildNode):
         self.position = position
         self.function_ = function_
         self.child_position = child_position
-        self.protocols = protocols
-        self.mappings = mappings
+        self.protocols = protocols if protocols is not None else Protocols()
+        self.mappings = mappings if mappings is not None else Mappings()
         self.gobo = gobo
         super().__init__(*args, **kwargs)
 
@@ -630,9 +693,9 @@ class Fixture(BaseChildNode):
             self.child_position = xml_node.find("ChildPosition").text
 
         if xml_node.find("Protocols"):
-            self.protocols = [Protocol(xml_node=i) for i in xml_node.find("Protocols").findall("Protocol")]
+            self.protocols = Protocols(xml_node=xml_node.find("Protocols"))
         if xml_node.find("Mappings") is not None:
-            self.mappings = [Mapping(xml_node=i) for i in xml_node.find("Mappings").findall("Mapping")]
+            self.mappings = Mappings(xml_node=xml_node.find("Mappings"))
         if xml_node.find("Gobo") is not None:
             self.gobo = Gobo(xml_node=xml_node.find("Gobo"))
 
@@ -657,9 +720,7 @@ class Fixture(BaseChildNode):
             ElementTree.SubElement(element, "ChildPosition").text = self.child_position
 
         if self.protocols:
-            protocols_element = ElementTree.SubElement(element, "Protocols")
-            for protocol in self.protocols:
-                protocols_element.append(protocol.to_xml())
+            self.protocols.to_xml(element)
 
         if isinstance(self.color, Color):
             self.color.to_xml(element)
@@ -667,9 +728,7 @@ class Fixture(BaseChildNode):
             Color(str_repr=self.color).to_xml(element)
 
         if self.mappings:
-            mappings_element = ElementTree.SubElement(element, "Mappings")
-            for mapping in self.mappings:
-                mappings_element.append(mapping.to_xml())
+            self.mappings.to_xml(element)
         if self.gobo:
             element.append(self.gobo.to_xml())
 
