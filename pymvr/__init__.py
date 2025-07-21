@@ -5,6 +5,7 @@ import zipfile
 import sys
 import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
+from enum import Enum
 
 __version__ = "0.5.1"
 
@@ -186,6 +187,114 @@ class UserData(BaseNode):
         return element
 
 
+class ScaleHandelingEnum(Enum):
+    SCALE_KEEP_RATIO = "ScaleKeepRatio"
+    SCALE_IGNORE_RATIO = "ScaleIgnoreRatio"
+    KEEP_SIZE_CENTER = "KeepSizeCenter"
+
+
+class ScaleHandeling(BaseNode):
+    def __init__(
+        self,
+        value: ScaleHandelingEnum = ScaleHandelingEnum.SCALE_KEEP_RATIO,
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.value = value
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        if xml_node.text:
+            try:
+                self.value = ScaleHandelingEnum(xml_node.text)
+            except ValueError:
+                self.value = ScaleHandelingEnum.SCALE_KEEP_RATIO
+        else:
+            self.value = ScaleHandelingEnum.SCALE_KEEP_RATIO
+
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "ScaleHandeling")
+        element.text = self.value.value
+        return element
+
+
+class Network(BaseNode):
+    def __init__(
+        self,
+        geometry: str = "",
+        ipv4: Union[str, None] = None,
+        subnetmask: Union[str, None] = None,
+        ipv6: Union[str, None] = None,
+        dhcp: bool = False,
+        hostname: Union[str, None] = None,
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.geometry = geometry
+        self.ipv4 = ipv4
+        self.subnetmask = subnetmask
+        self.ipv6 = ipv6
+        self.dhcp = dhcp
+        self.hostname = hostname
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.geometry = xml_node.attrib.get("geometry", "")
+        self.ipv4 = xml_node.attrib.get("ipv4")
+        self.subnetmask = xml_node.attrib.get("subnetmask")
+        self.ipv6 = xml_node.attrib.get("ipv6")
+        self.dhcp = xml_node.attrib.get("dhcp", "false").lower() in ("true", "1", "on")
+        self.hostname = xml_node.attrib.get("hostname")
+
+    def to_xml(self, parent: Element):
+        attributes = {"geometry": self.geometry}
+        if self.ipv4:
+            attributes["ipv4"] = self.ipv4
+        if self.subnetmask:
+            attributes["subnetmask"] = self.subnetmask
+        if self.ipv6:
+            attributes["ipv6"] = self.ipv6
+        if self.dhcp:
+            attributes["dhcp"] = "true"
+        if self.hostname:
+            attributes["hostname"] = self.hostname
+        element = ElementTree.SubElement(parent, "Network", **attributes)
+        return element
+
+
+class Addresses(BaseNode):
+    def __init__(
+        self,
+        dmx: List["Address"] = [],
+        network: List["Network"] = [],
+        xml_node: "Element" = None,
+        *args,
+        **kwargs,
+    ):
+        self.dmx = dmx if dmx is not None else []
+        self.network = network if network is not None else []
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.dmx = [Address(xml_node=i) for i in xml_node.findall("Address")]
+        self.network = [Network(xml_node=i) for i in xml_node.findall("Network")]
+
+    def to_xml(self, parent: Element):
+        if not self.dmx and not self.network:
+            return None
+        element = ElementTree.SubElement(parent, "Addresses")
+        for dmx_address in self.dmx:
+            dmx_address.to_xml(element)
+        for network_address in self.network:
+            network_address.to_xml(element)
+        return element
+
+    def __len__(self):
+        return len(self.dmx) + len(self.network)
+
+
 class BaseChildNode(BaseNode):
     def __init__(
         self,
@@ -201,7 +310,7 @@ class BaseChildNode(BaseNode):
         custom_id: int = 0,
         custom_id_type: int = 0,
         cast_shadow: bool = False,
-        addresses: List["Address"] = [],
+        addresses: "Addresses" = None,
         alignments: List["Alignment"] = [],
         custom_commands: List["CustomCommand"] = [],
         overwrites: List["Overwrite"] = [],
@@ -225,7 +334,7 @@ class BaseChildNode(BaseNode):
         self.custom_id = custom_id
         self.custom_id_type = custom_id_type
         self.cast_shadow = cast_shadow
-        self.addresses = addresses
+        self.addresses = addresses if addresses is not None else Addresses()
         self.alignments = alignments
         self.custom_commands = custom_commands
         self.overwrites = overwrites
@@ -268,10 +377,14 @@ class BaseChildNode(BaseNode):
             text_value = (xml_node.find("CastShadow").text or "false").lower()
             self.cast_shadow = text_value in ("true", "1")
 
-        if xml_node.find("Addresses") is not None:
-            self.addresses = [Address(xml_node=i) for i in xml_node.find("Addresses").findall("Address")]
-        if not len(self.addresses):
-            self.addresses = [Address(dmx_break=0, universe=0, address=0)]
+        addresses_node = xml_node.find("Addresses")
+        if addresses_node is not None:
+            self.addresses = Addresses(xml_node=addresses_node)
+        else:
+            self.addresses = Addresses()
+
+        if len(self.addresses) == 0:
+            self.addresses.dmx.append(Address(dmx_break=0, universe=0, address=0))
 
         if xml_node.find("Alignments"):
             self.alignments = [Alignment(xml_node=i) for i in xml_node.find("Alignments").findall("Alignment")]
@@ -301,9 +414,7 @@ class BaseChildNode(BaseNode):
             ElementTree.SubElement(element, "CastShadow").text = "true"
 
         if self.addresses:
-            addresses_element = ElementTree.SubElement(element, "Addresses")
-            for address in self.addresses:
-                address.to_xml(addresses_element)
+            self.addresses.to_xml(element)
 
         if self.alignments:
             alignments_element = ElementTree.SubElement(element, "Alignments")
@@ -336,7 +447,6 @@ class BaseChildNode(BaseNode):
 
         if self.child_list:
             self.child_list.to_xml(element)
-
 
 
 class BaseChildNodeExtended(BaseChildNode):
@@ -434,7 +544,7 @@ class MappingDefinition(BaseNode):
         size_x: int = 0,
         size_y: int = 0,
         source=None,
-        scale_handling=None,
+        scale_handling: "ScaleHandeling" = None,
         *args,
         **kwargs,
     ):
@@ -443,7 +553,7 @@ class MappingDefinition(BaseNode):
         self.size_x = size_x
         self.size_y = size_y
         self.source = source
-        self.scale_handling = scale_handling
+        self.scale_handling = scale_handling if scale_handling is not None else ScaleHandeling()
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -451,13 +561,17 @@ class MappingDefinition(BaseNode):
         self.size_x = int(xml_node.find("SizeX").text)
         self.size_y = int(xml_node.find("SizeY").text)
         self.source = xml_node.find("Source")  # TODO
-        self.scale_handling = xml_node.find("ScaleHandeling").text  # TODO ENUM
+        scale_handling_node = xml_node.find("ScaleHandeling")
+        if scale_handling_node is not None:
+            self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
 
     def to_xml(self):
         element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
         ElementTree.SubElement(element, "SizeX").text = str(self.size_x)
         ElementTree.SubElement(element, "SizeY").text = str(self.size_y)
-        # TODO source and scale_handling
+        if self.scale_handling:
+            self.scale_handling.to_xml(element)
+        # TODO source
         return element
 
 
@@ -1366,26 +1480,27 @@ class Projection(BaseNode):
     def __init__(
         self,
         source: "Source" = None,
-        scale_handling: Union[str, None] = None,
+        scale_handling: "ScaleHandeling" = None,
         *args,
         **kwargs,
     ):
         self.source = source
-        self.scale_handling = scale_handling
+        self.scale_handling = scale_handling if scale_handling is not None else ScaleHandeling()
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         if xml_node.find("Source") is not None:
             self.source = Source(xml_node=xml_node.find("Source"))
-        if xml_node.find("ScaleHandeling") is not None:
-            self.scale_handling = xml_node.find("ScaleHandeling").text
+        scale_handling_node = xml_node.find("ScaleHandeling")
+        if scale_handling_node is not None:
+            self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
 
     def to_xml(self):
         element = ElementTree.Element(type(self).__name__)
         if self.source:
             element.append(self.source.to_xml())
         if self.scale_handling:
-            ElementTree.SubElement(element, "ScaleHandeling").text = self.scale_handling
+            self.scale_handling.to_xml(element)
         return element
 
 
