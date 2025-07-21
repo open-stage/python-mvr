@@ -23,8 +23,8 @@ def process_mvr_child_list(child_list, mvr_scene):
 
 def process_mvr_fixture(fixture):
     assert fixture.gdtf_spec == "BlenderDMX@Basic_LED_Bulb@ver2.gdtf"
-    assert fixture.addresses[0].dmx_break == 1
-    assert fixture.addresses[0].universe == 1
+    assert fixture.addresses.address[0].dmx_break == 1
+    assert fixture.addresses.address[0].universe == 1
     assert fixture.gdtf_mode == "Standard mode"
     assert fixture.matrix.matrix[3] == [0.0, 0.0, 0.0, 0]
 

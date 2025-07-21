@@ -39,13 +39,14 @@ def test_write_from_json():
             new_addresses = [
                 pymvr.Address(dmx_break=address["dmx_break"], address=address["address"], universe=address["universe"]) for address in fixture_data["addresses"]
             ]
+
             new_fixture = pymvr.Fixture(
                 name=fixture_data["gdtf_spec"],
                 uuid=fixture_data["uuid"],
                 gdtf_spec=fixture_data["gdtf_spec"],
                 gdtf_mode=fixture_data["gdtf_mode"],
                 fixture_id=fixture_data["fixture_id"],
-                addresses=new_addresses,
+                addresses=pymvr.Addresses(address=new_addresses),
             )
 
             child_list.fixtures.append(new_fixture)

@@ -267,32 +267,32 @@ class Network(BaseNode):
 class Addresses(BaseNode):
     def __init__(
         self,
-        dmx: List["Address"] = [],
+        address: List["Address"] = [],
         network: List["Network"] = [],
         xml_node: "Element" = None,
         *args,
         **kwargs,
     ):
-        self.dmx = dmx if dmx is not None else []
+        self.address = address if address is not None else []
         self.network = network if network is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.dmx = [Address(xml_node=i) for i in xml_node.findall("Address")]
+        self.address = [Address(xml_node=i) for i in xml_node.findall("Address")]
         self.network = [Network(xml_node=i) for i in xml_node.findall("Network")]
 
     def to_xml(self, parent: Element):
-        if not self.dmx and not self.network:
+        if not self.address and not self.network:
             return None
         element = ElementTree.SubElement(parent, "Addresses")
-        for dmx_address in self.dmx:
+        for dmx_address in self.address:
             dmx_address.to_xml(element)
         for network_address in self.network:
             network_address.to_xml(element)
         return element
 
     def __len__(self):
-        return len(self.dmx) + len(self.network)
+        return len(self.address) + len(self.network)
 
 
 class BaseChildNode(BaseNode):
@@ -384,7 +384,7 @@ class BaseChildNode(BaseNode):
             self.addresses = Addresses()
 
         if len(self.addresses) == 0:
-            self.addresses.dmx.append(Address(dmx_break=0, universe=0, address=0))
+            self.addresses.address.append(Address(dmx_break=0, universe=0, address=0))
 
         if xml_node.find("Alignments"):
             self.alignments = [Alignment(xml_node=i) for i in xml_node.find("Alignments").findall("Alignment")]
