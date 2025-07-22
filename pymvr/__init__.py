@@ -34,7 +34,7 @@ class GeneralSceneDescription:
         self.version_major: str = self._root.get("verMajor", "")
         self.version_minor: str = self._root.get("verMinor", "")
         self.provider: str = self._root.get("provider", "")
-        self.providerVersion: str = self._root.get("providerVersion", "")
+        self.provider_version: str = self._root.get("providerVersion", "")
 
         scene = self._root.find("Scene")
         if scene is not None:
@@ -44,6 +44,13 @@ class GeneralSceneDescription:
 
         if user_data is not None:
             self.user_data = UserData(xml_node=user_data)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._package is not None:
+            self._package.close()
 
 
 class GeneralSceneDescriptionWriter:
@@ -57,10 +64,10 @@ class GeneralSceneDescriptionWriter:
         self.version_major: str = "1"
         self.version_minor: str = "6"
         self.provider: str = "pymvr"
-        self.providerVersion: str = __version__
+        self.provider_version: str = __version__
         self.files_list: List[str] = []
         self.xml_root = ElementTree.Element(
-            "GeneralSceneDescription", verMajor=self.version_major, verMinor=self.version_minor, provider=self.provider, providerVersion=self.providerVersion
+            "GeneralSceneDescription", verMajor=self.version_major, verMinor=self.version_minor, provider=self.provider, provider_version=self.provider_version
         )
 
     def write_mvr(self, path=None):
