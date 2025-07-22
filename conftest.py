@@ -23,3 +23,7 @@ def pymvr_module():
 def pytest_configure(config):
     plugin = config.pluginmanager.getplugin("mypy")
     plugin.mypy_argv.append("--no-strict-optional")
+
+
+def pytest_addoption(parser):
+    parser.addoption("--file-path", action="store", default=None, help="Path to the input file")
