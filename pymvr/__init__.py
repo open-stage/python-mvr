@@ -19,10 +19,10 @@
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# OUT of OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import List, Union
+from typing import List, Union, Optional, Tuple
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 import zipfile
@@ -46,7 +46,7 @@ def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
 
 
 class GeneralSceneDescription:
-    def __init__(self, path=None):
+    def __init__(self, path: Optional[str] = None):
         if path is not None:
             self._package = zipfile.ZipFile(path, "r")
         if self._package is not None:
@@ -89,7 +89,7 @@ class GeneralSceneDescriptionWriter:
         self.version_minor: str = "6"
         self.provider: str = "pymvr"
         self.provider_version: str = __version__
-        self.files_list: List[str] = []
+        self.files_list: List[Tuple[str, str]] = []
         self.xml_root = ElementTree.Element(
             "GeneralSceneDescription",
             verMajor=self.version_major,
@@ -98,7 +98,7 @@ class GeneralSceneDescriptionWriter:
             provider_version=self.provider_version,
         )
 
-    def write_mvr(self, path=None):
+    def write_mvr(self, path: Optional[str] = None):
         if path is not None:
             if sys.version_info >= (3, 9):
                 ElementTree.indent(self.xml_root, space="    ", level=0)
@@ -115,7 +115,7 @@ class GeneralSceneDescriptionWriter:
 
 
 class BaseNode:
-    def __init__(self, xml_node: "Element" = None):
+    def __init__(self, xml_node: Optional["Element"] = None):
         if xml_node is not None:
             self._read_xml(xml_node)
 
@@ -124,7 +124,13 @@ class BaseNode:
 
 
 class ContainerNode(BaseNode):
-    def __init__(self, children=None, xml_node: "Element" = None, *args, **kwargs):
+    def __init__(
+        self,
+        children: Optional[List] = None,
+        xml_node: Optional["Element"] = None,
+        *args,
+        **kwargs,
+    ):
         if children is None:
             children = []
         self.children = children
@@ -199,9 +205,9 @@ class Mappings(ContainerNode):
 class Scene(BaseNode):
     def __init__(
         self,
-        layers: "Layers" = None,
-        aux_data: "AUXData" = None,
-        xml_node: "Element" = None,
+        layers: Optional["Layers"] = None,
+        aux_data: Optional["AUXData"] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -210,7 +216,9 @@ class Scene(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.layers = Layers(xml_node=xml_node.find("Layers"))
+        layers_node = xml_node.find("Layers")
+        if layers_node is not None:
+            self.layers = Layers(xml_node=layers_node)
 
         aux_data_collect = xml_node.find("AUXData")
 
@@ -232,7 +240,7 @@ class Layers(BaseNode):
     def __init__(
         self,
         layers: List["Layer"] = [],
-        xml_node: "Element" = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -280,7 +288,7 @@ class UserData(BaseNode):
     def __init__(
         self,
         data: List["Data"] = [],
-        xml_node: "Element" = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -307,7 +315,7 @@ class ScaleHandeling(BaseNode):
     def __init__(
         self,
         value: ScaleHandelingEnum = ScaleHandelingEnum.SCALE_KEEP_RATIO,
-        xml_node: "Element" = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -333,12 +341,12 @@ class Network(BaseNode):
     def __init__(
         self,
         geometry: str = "",
-        ipv4: Union[str, None] = None,
-        subnetmask: Union[str, None] = None,
-        ipv6: Union[str, None] = None,
+        ipv4: Optional[str] = None,
+        subnetmask: Optional[str] = None,
+        ipv6: Optional[str] = None,
         dhcp: bool = False,
-        hostname: Union[str, None] = None,
-        xml_node: "Element" = None,
+        hostname: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -379,7 +387,7 @@ class Addresses(BaseNode):
         self,
         address: List["Address"] = [],
         network: List["Network"] = [],
-        xml_node: "Element" = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -391,7 +399,7 @@ class Addresses(BaseNode):
         self.address = [Address(xml_node=i) for i in xml_node.findall("Address")]
         self.network = [Network(xml_node=i) for i in xml_node.findall("Network")]
 
-    def to_xml(self, parent: Element):
+    def to_xml(self, parent: Element) -> Optional[Element]:
         if not self.address and not self.network:
             return None
         element = ElementTree.SubElement(parent, "Addresses")
@@ -408,32 +416,33 @@ class Addresses(BaseNode):
 class BaseChildNode(BaseNode):
     def __init__(
         self,
-        name: Union[str, None] = None,
-        uuid: Union[str, None] = None,
-        gdtf_spec: Union[str, None] = None,
-        gdtf_mode: Union[str, None] = None,
+        name: Optional[str] = None,
+        uuid: Optional[str] = None,
+        gdtf_spec: Optional[str] = None,
+        gdtf_mode: Optional[str] = None,
         matrix: Matrix = Matrix(0),
-        classing: Union[str, None] = None,
-        fixture_id: Union[str, None] = None,
+        classing: Optional[str] = None,
+        fixture_id: Optional[str] = None,
         fixture_id_numeric: int = 0,
         unit_number: int = 0,
         custom_id: int = 0,
         custom_id_type: int = 0,
         cast_shadow: bool = False,
-        addresses: "Addresses" = None,
-        alignments: "Alignments" = None,
-        custom_commands: "CustomCommands" = None,
-        overwrites: "Overwrites" = None,
-        connections: "Connections" = None,
-        child_list: Union["ChildList", None] = None,
-        multipatch: Union[str, None] = None,
+        addresses: Optional["Addresses"] = None,
+        alignments: Optional["Alignments"] = None,
+        custom_commands: Optional["CustomCommands"] = None,
+        overwrites: Optional["Overwrites"] = None,
+        connections: Optional["Connections"] = None,
+        child_list: Optional["ChildList"] = None,
+        multipatch: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.name = name
         if uuid is None:
             uuid = str(py_uuid.uuid4())
-        self.uuid = uuid
+        self.uuid: str = uuid
         self.gdtf_spec = gdtf_spec
         self.gdtf_mode = gdtf_mode
         self.matrix = matrix
@@ -453,15 +462,17 @@ class BaseChildNode(BaseNode):
         self.connections = connections if connections is not None else Connections()
         self.child_list = child_list
         self.multipatch = multipatch
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
         self.multipatch = xml_node.attrib.get("multipatch")
-        _gdtf_spec = xml_node.find("GDTFSpec")
-        if _gdtf_spec is not None:
-            self.gdtf_spec = _gdtf_spec.text
+        _gdtf_spec_node = xml_node.find("GDTFSpec")
+        if _gdtf_spec_node is not None:
+            self.gdtf_spec = _gdtf_spec_node.text
             if self.gdtf_spec is not None:
                 self.gdtf_spec = self.gdtf_spec.encode("utf-8").decode(
                     "cp437"
@@ -469,26 +480,41 @@ class BaseChildNode(BaseNode):
             if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
                 if self.gdtf_spec[-5:].lower() != ".gdtf":
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
-        if xml_node.find("GDTFMode") is not None:
-            self.gdtf_mode = xml_node.find("GDTFMode").text
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
-        if xml_node.find("FixtureID") is not None:
-            self.fixture_id = xml_node.find("FixtureID").text
 
-        if xml_node.find("FixtureIDNumeric") is not None:
-            self.fixture_id_numeric = int(xml_node.find("FixtureIDNumeric").text)
-        if xml_node.find("UnitNumber") is not None:
-            self.unit_number = int(xml_node.find("UnitNumber").text)
+        _gdtf_mode_node = xml_node.find("GDTFMode")
+        if _gdtf_mode_node is not None:
+            self.gdtf_mode = _gdtf_mode_node.text
 
-        if xml_node.find("CustomId") is not None:
-            self.custom_id = int(xml_node.find("CustomId").text or 0)
+        _matrix_node = xml_node.find("Matrix")
+        if _matrix_node is not None and _matrix_node.text is not None:
+            self.matrix = Matrix(str_repr=_matrix_node.text)
 
-        if xml_node.find("CustomIdType") is not None:
-            self.custom_id_type = int(xml_node.find("CustomIdType").text or 0)
+        _fixture_id_node = xml_node.find("FixtureID")
+        if _fixture_id_node is not None:
+            self.fixture_id = _fixture_id_node.text
 
-        if xml_node.find("CastShadow") is not None:
-            text_value = (xml_node.find("CastShadow").text or "false").lower()
+        _fixture_id_numeric_node = xml_node.find("FixtureIDNumeric")
+        if (
+            _fixture_id_numeric_node is not None
+            and _fixture_id_numeric_node.text is not None
+        ):
+            self.fixture_id_numeric = int(_fixture_id_numeric_node.text)
+
+        _unit_number_node = xml_node.find("UnitNumber")
+        if _unit_number_node is not None and _unit_number_node.text is not None:
+            self.unit_number = int(_unit_number_node.text)
+
+        _custom_id_node = xml_node.find("CustomId")
+        if _custom_id_node is not None and _custom_id_node.text is not None:
+            self.custom_id = int(_custom_id_node.text or 0)
+
+        _custom_id_type_node = xml_node.find("CustomIdType")
+        if _custom_id_type_node is not None and _custom_id_type_node.text is not None:
+            self.custom_id_type = int(_custom_id_type_node.text or 0)
+
+        _cast_shadow_node = xml_node.find("CastShadow")
+        if _cast_shadow_node is not None and _cast_shadow_node.text is not None:
+            text_value = (_cast_shadow_node.text or "false").lower()
             self.cast_shadow = text_value in ("true", "1")
 
         addresses_node = xml_node.find("Addresses")
@@ -497,20 +523,29 @@ class BaseChildNode(BaseNode):
         else:
             self.addresses = Addresses()
 
-        if xml_node.find("Alignments"):
-            self.alignments = Alignments(xml_node=xml_node.find("Alignments"))
-        if xml_node.find("Connections"):
-            self.connections = Connections(xml_node=xml_node.find("Connections"))
-        if xml_node.find("CustomCommands") is not None:
-            self.custom_commands = CustomCommands(
-                xml_node=xml_node.find("CustomCommands")
-            )
-        if xml_node.find("Overwrites"):
-            self.overwrites = Overwrites(xml_node=xml_node.find("Overwrites"))
-        if xml_node.find("Classing") is not None:
-            self.classing = xml_node.find("Classing").text
+        alignments_node = xml_node.find("Alignments")
+        if alignments_node is not None:
+            self.alignments = Alignments(xml_node=alignments_node)
 
-        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+        connections_node = xml_node.find("Connections")
+        if connections_node is not None:
+            self.connections = Connections(xml_node=connections_node)
+
+        custom_commands_node = xml_node.find("CustomCommands")
+        if custom_commands_node is not None:
+            self.custom_commands = CustomCommands(xml_node=custom_commands_node)
+
+        overwrites_node = xml_node.find("Overwrites")
+        if overwrites_node is not None:
+            self.overwrites = Overwrites(xml_node=overwrites_node)
+
+        classing_node = xml_node.find("Classing")
+        if classing_node is not None:
+            self.classing = classing_node.text
+
+        child_list_node = xml_node.find("ChildList")
+        if child_list_node is not None:
+            self.child_list = ChildList(xml_node=child_list_node)
 
     def __str__(self):
         return f"{self.name}"
@@ -561,8 +596,8 @@ class BaseChildNode(BaseNode):
 class BaseChildNodeExtended(BaseChildNode):
     def __init__(
         self,
-        geometries: "Geometries" = None,
-        child_list: Union["ChildList", None] = None,
+        geometries: Optional["Geometries"] = None,
+        child_list: Optional["ChildList"] = None,
         *args,
         **kwargs,
     ):
@@ -572,10 +607,13 @@ class BaseChildNodeExtended(BaseChildNode):
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
-        if xml_node.find("Geometries") is not None:
-            self.geometries = Geometries(xml_node=xml_node.find("Geometries"))
+        geometries_node = xml_node.find("Geometries")
+        if geometries_node is not None:
+            self.geometries = Geometries(xml_node=geometries_node)
 
-        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
+        child_list_node = xml_node.find("ChildList")
+        if child_list_node is not None:
+            self.child_list = ChildList(xml_node=child_list_node)
 
     def __str__(self):
         return f"{self.name}"
@@ -599,8 +637,12 @@ class Data(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.provider = xml_node.attrib.get("provider")
-        self.ver = xml_node.attrib.get("ver")
+        provider = xml_node.attrib.get("provider")
+        if provider is not None:
+            self.provider = provider
+        ver = xml_node.attrib.get("ver")
+        if ver is not None:
+            self.ver = ver
 
     def __str__(self):
         return f"{self.provider} {self.ver}"
@@ -619,6 +661,7 @@ class AUXData(BaseNode):
         symdefs: List["Symdef"] = [],
         positions: List["Position"] = [],
         mapping_definitions: List["MappingDefinition"] = [],
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -626,7 +669,7 @@ class AUXData(BaseNode):
         self.symdefs = symdefs
         self.positions = positions
         self.mapping_definitions = mapping_definitions
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.classes = [Class(xml_node=i) for i in xml_node.findall("Class")]
@@ -652,12 +695,13 @@ class AUXData(BaseNode):
 class MappingDefinition(BaseNode):
     def __init__(
         self,
-        name: Union[str, None] = None,
-        uuid: Union[str, None] = None,
+        name: Optional[str] = None,
+        uuid: Optional[str] = None,
         size_x: int = 0,
         size_y: int = 0,
-        source=None,
-        scale_handling: "ScaleHandeling" = None,
+        source: Optional["Source"] = None,
+        scale_handling: Optional["ScaleHandeling"] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -669,14 +713,20 @@ class MappingDefinition(BaseNode):
         self.scale_handling = (
             scale_handling if scale_handling is not None else ScaleHandeling()
         )
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
         self.uuid = xml_node.attrib.get("uuid")
-        # TODO handle missing data...
-        self.size_x = int(xml_node.find("SizeX").text)
-        self.size_y = int(xml_node.find("SizeY").text)
+
+        size_x_node = xml_node.find("SizeX")
+        if size_x_node is not None and size_x_node.text is not None:
+            self.size_x = int(size_x_node.text)
+
+        size_y_node = xml_node.find("SizeY")
+        if size_y_node is not None and size_y_node.text is not None:
+            self.size_y = int(size_y_node.text)
+
         source_node = xml_node.find("Source")
         if source_node is not None:
             self.source = Source(xml_node=source_node)
@@ -699,17 +749,18 @@ class MappingDefinition(BaseNode):
 class Fixture(BaseChildNode):
     def __init__(
         self,
-        focus: Union[str, None] = None,
+        focus: Optional[str] = None,
         color: Union["Color", str, None] = Color(),
         dmx_invert_pan: bool = False,
         dmx_invert_tilt: bool = False,
-        position: Union[str, None] = None,
-        function_: Union[str, None] = None,
-        child_position: Union[str, None] = None,
-        protocols: "Protocols" = None,
-        mappings: "Mappings" = None,
-        gobo: Union["Gobo", None] = None,
+        position: Optional[str] = None,
+        function_: Optional[str] = None,
+        child_position: Optional[str] = None,
+        protocols: Optional["Protocols"] = None,
+        mappings: Optional["Mappings"] = None,
+        gobo: Optional["Gobo"] = None,
         unit_number: int = 0,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -724,42 +775,57 @@ class Fixture(BaseChildNode):
         self.mappings = mappings if mappings is not None else Mappings()
         self.gobo = gobo
         self.unit_number = unit_number
+        kwargs["xml_node"] = xml_node
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
 
-        if xml_node.find("Focus") is not None:
-            self.focus = xml_node.find("Focus").text
+        focus_node = xml_node.find("Focus")
+        if focus_node is not None:
+            self.focus = focus_node.text
 
-        if xml_node.find("Color") is not None:
-            self.color = Color(str_repr=xml_node.find("Color").text)
+        color_node = xml_node.find("Color")
+        if color_node is not None and color_node.text is not None:
+            self.color = Color(str_repr=color_node.text)
 
-        if xml_node.find("DMXInvertPan") is not None:
-            text_value = (xml_node.find("DMXInvertPan").text or "false").lower()
+        dmx_invert_pan_node = xml_node.find("DMXInvertPan")
+        if dmx_invert_pan_node is not None and dmx_invert_pan_node.text is not None:
+            text_value = (dmx_invert_pan_node.text or "false").lower()
             self.dmx_invert_pan = text_value in ("true", "1")
 
-        if xml_node.find("DMXInvertTilt") is not None:
-            text_value = (xml_node.find("DMXInvertTilt").text or "false").lower()
+        dmx_invert_tilt_node = xml_node.find("DMXInvertTilt")
+        if dmx_invert_tilt_node is not None and dmx_invert_tilt_node.text is not None:
+            text_value = (dmx_invert_tilt_node.text or "false").lower()
             self.dmx_invert_tilt = text_value in ("true", "1")
 
-        if xml_node.find("Position") is not None:
-            self.position = xml_node.find("Position").text
+        position_node = xml_node.find("Position")
+        if position_node is not None:
+            self.position = position_node.text
 
-        if xml_node.find("Function") is not None:
-            self.function_ = xml_node.find("Function").text
+        function_node = xml_node.find("Function")
+        if function_node is not None:
+            self.function_ = function_node.text
 
-        if xml_node.find("ChildPosition") is not None:
-            self.child_position = xml_node.find("ChildPosition").text
+        child_position_node = xml_node.find("ChildPosition")
+        if child_position_node is not None:
+            self.child_position = child_position_node.text
 
-        if xml_node.find("Protocols"):
-            self.protocols = Protocols(xml_node=xml_node.find("Protocols"))
-        if xml_node.find("Mappings") is not None:
-            self.mappings = Mappings(xml_node=xml_node.find("Mappings"))
-        if xml_node.find("Gobo") is not None:
-            self.gobo = Gobo(xml_node=xml_node.find("Gobo"))
-        if xml_node.find("UnitNumber") is not None:
-            self.unit_number = int(xml_node.find("UnitNumber").text)
+        protocols_node = xml_node.find("Protocols")
+        if protocols_node is not None:
+            self.protocols = Protocols(xml_node=protocols_node)
+
+        mappings_node = xml_node.find("Mappings")
+        if mappings_node is not None:
+            self.mappings = Mappings(xml_node=mappings_node)
+
+        gobo_node = xml_node.find("Gobo")
+        if gobo_node is not None:
+            self.gobo = Gobo(xml_node=gobo_node)
+
+        unit_number_node = xml_node.find("UnitNumber")
+        if unit_number_node is not None and unit_number_node.text is not None:
+            self.unit_number = int(unit_number_node.text)
 
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
@@ -805,11 +871,12 @@ class Fixture(BaseChildNode):
 class GroupObject(BaseNode):
     def __init__(
         self,
-        name: Union[str, None] = None,
-        uuid: Union[str, None] = None,
-        classing: Union[str, None] = None,
-        child_list: Union["ChildList", None] = None,
+        name: Optional[str] = None,
+        uuid: Optional[str] = None,
+        classing: Optional[str] = None,
+        child_list: Optional["ChildList"] = None,
         matrix: Matrix = Matrix(0),
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -819,16 +886,22 @@ class GroupObject(BaseNode):
         self.child_list = child_list
         self.matrix = matrix
 
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
         self.uuid = xml_node.attrib.get("uuid")
-        if xml_node.find("Classing") is not None:
-            self.classing = xml_node.find("Classing").text
-        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+        classing_node = xml_node.find("Classing")
+        if classing_node is not None:
+            self.classing = classing_node.text
+
+        child_list_node = xml_node.find("ChildList")
+        if child_list_node is not None:
+            self.child_list = ChildList(xml_node=child_list_node)
+
+        matrix_node = xml_node.find("Matrix")
+        if matrix_node is not None and matrix_node.text is not None:
+            self.matrix = Matrix(str_repr=matrix_node.text)
 
     def __str__(self):
         return f"{self.name}"
@@ -856,6 +929,7 @@ class ChildList(BaseNode):
         trusses: List["Truss"] = [],
         video_screens: List["VideoScreen"] = [],
         projectors: List["Projector"] = [],
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -899,7 +973,7 @@ class ChildList(BaseNode):
         else:
             self.projectors = []
 
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.scene_objects = [
@@ -950,9 +1024,10 @@ class Layer(BaseNode):
     def __init__(
         self,
         name: str = "",
-        uuid: Union[str, None] = None,
+        uuid: Optional[str] = None,
         matrix: Matrix = Matrix(0),
-        child_list: Union["ChildList", None] = None,
+        child_list: Optional["ChildList"] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -963,15 +1038,21 @@ class Layer(BaseNode):
         self.child_list = child_list
         self.matrix = matrix
 
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name", "")
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
 
-        self.child_list = ChildList(xml_node=xml_node.find("ChildList"))
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+        child_list_node = xml_node.find("ChildList")
+        if child_list_node is not None:
+            self.child_list = ChildList(xml_node=child_list_node)
+
+        matrix_node = xml_node.find("Matrix")
+        if matrix_node is not None and matrix_node.text is not None:
+            self.matrix = Matrix(str_repr=matrix_node.text)
 
     def to_xml(self):
         element = ElementTree.Element(
@@ -992,13 +1073,14 @@ class Address(BaseNode):
         dmx_break: int = 0,
         universe: int = 1,
         address: int = 1,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.dmx_break = dmx_break
         self.address = address
         self.universe = universe
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.dmx_break = int(xml_node.attrib.get("break", 0))
@@ -1036,14 +1118,15 @@ class Address(BaseNode):
 class Class(BaseNode):
     def __init__(
         self,
-        uuid: Union[str, None] = None,
-        name: Union[str, None] = None,
+        uuid: Optional[str] = None,
+        name: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.uuid = uuid
         self.name = name
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
@@ -1062,14 +1145,15 @@ class Class(BaseNode):
 class Position(BaseNode):
     def __init__(
         self,
-        uuid: Union[str, None] = None,
-        name: Union[str, None] = None,
+        uuid: Optional[str] = None,
+        name: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.uuid = uuid
         self.name = name
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
@@ -1088,10 +1172,11 @@ class Position(BaseNode):
 class Symdef(BaseNode):
     def __init__(
         self,
-        uuid: Union[str, None] = None,
-        name: Union[str, None] = None,
+        uuid: Optional[str] = None,
+        name: Optional[str] = None,
         geometry3d: List["Geometry3D"] = [],
         symbol: List["Symbol"] = [],
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1099,7 +1184,7 @@ class Symdef(BaseNode):
         self.name = name
         self.geometry3d = geometry3d
         self.symbol = symbol
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
@@ -1132,21 +1217,23 @@ class Symdef(BaseNode):
 class Geometry3D(BaseNode):
     def __init__(
         self,
-        file_name: Union[str, None] = None,
+        file_name: Optional[str] = None,
         matrix: Matrix = Matrix(0),
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.file_name = file_name
         self.matrix = matrix
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.file_name = (
             xml_node.attrib.get("fileName", "").encode("utf-8").decode("cp437")
         )
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+        matrix_node = xml_node.find("Matrix")
+        if matrix_node is not None and matrix_node.text is not None:
+            self.matrix = Matrix(str_repr=matrix_node.text)
 
     def __str__(self):
         return f"{self.file_name} {self.matrix}"
@@ -1172,22 +1259,24 @@ class Geometry3D(BaseNode):
 class Symbol(BaseNode):
     def __init__(
         self,
-        uuid: Union[str, None] = None,
-        symdef: Union[str, None] = None,
+        uuid: Optional[str] = None,
+        symdef: Optional[str] = None,
         matrix: Matrix = Matrix(0),
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.uuid = uuid
         self.symdef = symdef
         self.matrix = matrix
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.uuid = xml_node.attrib.get("uuid")
         self.symdef = xml_node.attrib.get("symdef")
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
+        matrix_node = xml_node.find("Matrix")
+        if matrix_node is not None and matrix_node.text is not None:
+            self.matrix = Matrix(str_repr=matrix_node.text)
 
     def __str__(self):
         return f"{self.uuid}"
@@ -1205,12 +1294,13 @@ class Geometries(BaseNode):
         self,
         geometry3d: List["Geometry3D"] = [],
         symbol: List["Symbol"] = [],
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.geometry3d = geometry3d
         self.symbol = symbol
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
@@ -1230,11 +1320,12 @@ class Geometries(BaseNode):
 class FocusPoint(BaseNode):
     def __init__(
         self,
-        uuid: Union[str, None] = None,
-        name: Union[str, None] = None,
+        uuid: Optional[str] = None,
+        name: Optional[str] = None,
         matrix: Matrix = Matrix(0),
-        classing: Union[str, None] = None,
-        geometries: "Geometries" = None,
+        classing: Optional[str] = None,
+        geometries: Optional["Geometries"] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1246,17 +1337,22 @@ class FocusPoint(BaseNode):
             geometries = Geometries()
         self.geometries = geometries
 
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.uuid = xml_node.attrib.get("uuid")
         self.name = xml_node.attrib.get("name")
-        if xml_node.find("Matrix") is not None:
-            self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
-        if xml_node.find("Classing") is not None:
-            self.classing = xml_node.find("Classing").text
-        if xml_node.find("Geometries") is not None:
-            self.geometries = Geometries(xml_node=xml_node.find("Geometries"))
+        matrix_node = xml_node.find("Matrix")
+        if matrix_node is not None and matrix_node.text is not None:
+            self.matrix = Matrix(str_repr=matrix_node.text)
+
+        classing_node = xml_node.find("Classing")
+        if classing_node is not None:
+            self.classing = classing_node.text
+
+        geometries_node = xml_node.find("Geometries")
+        if geometries_node is not None:
+            self.geometries = Geometries(xml_node=geometries_node)
 
     def __str__(self):
         return f"{self.name}"
@@ -1285,9 +1381,9 @@ class SceneObject(BaseChildNodeExtended):
 class Truss(BaseChildNodeExtended):
     def __init__(
         self,
-        position: Union[str, None] = None,
-        function_: Union[str, None] = None,
-        child_position: Union[str, None] = None,
+        position: Optional[str] = None,
+        function_: Optional[str] = None,
+        child_position: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -1298,12 +1394,17 @@ class Truss(BaseChildNodeExtended):
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
-        if xml_node.find("Position") is not None:
-            self.position = xml_node.find("Position").text
-        if xml_node.find("Function") is not None:
-            self.function_ = xml_node.find("Function").text
-        if xml_node.find("ChildPosition") is not None:
-            self.child_position = xml_node.find("ChildPosition").text
+        position_node = xml_node.find("Position")
+        if position_node is not None:
+            self.position = position_node.text
+
+        function_node = xml_node.find("Function")
+        if function_node is not None:
+            self.function_ = function_node.text
+
+        child_position_node = xml_node.find("ChildPosition")
+        if child_position_node is not None:
+            self.child_position = child_position_node.text
 
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
@@ -1324,8 +1425,8 @@ class Support(BaseChildNodeExtended):
     def __init__(
         self,
         chain_length: float = 0,
-        position: Union[str, None] = None,
-        function_: Union[str, None] = None,
+        position: Optional[str] = None,
+        function_: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -1337,7 +1438,7 @@ class Support(BaseChildNodeExtended):
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
         chain_length_node = xml_node.find("ChainLength")
-        if chain_length_node is not None:
+        if chain_length_node is not None and chain_length_node.text is not None:
             self.chain_length = float(chain_length_node.text or 0)
 
         position_node = xml_node.find("Position")
@@ -1369,8 +1470,8 @@ class Support(BaseChildNodeExtended):
 class VideoScreen(BaseChildNodeExtended):
     def __init__(
         self,
-        sources: "Sources" = None,
-        function_: Union[str, None] = None,
+        sources: Optional["Sources"] = None,
+        function_: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -1380,10 +1481,13 @@ class VideoScreen(BaseChildNodeExtended):
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
-        if xml_node.find("Sources") is not None:
-            self.sources = Sources(xml_node=xml_node.find("Sources"))
-        if xml_node.find("Function") is not None:
-            self.function_ = xml_node.find("Function").text
+        sources_node = xml_node.find("Sources")
+        if sources_node is not None:
+            self.sources = Sources(xml_node=sources_node)
+
+        function_node = xml_node.find("Function")
+        if function_node is not None:
+            self.function_ = function_node.text
 
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
@@ -1403,7 +1507,7 @@ class VideoScreen(BaseChildNodeExtended):
 class Projector(BaseChildNodeExtended):
     def __init__(
         self,
-        projections: "Projections" = None,
+        projections: Optional["Projections"] = None,
         *args,
         **kwargs,
     ):
@@ -1412,8 +1516,9 @@ class Projector(BaseChildNodeExtended):
 
     def _read_xml(self, xml_node: "Element"):
         super()._read_xml(xml_node)
-        if xml_node.find("Projections") is not None:
-            self.projections = Projections(xml_node=xml_node.find("Projections"))
+        projections_node = xml_node.find("Projections")
+        if projections_node is not None:
+            self.projections = Projections(xml_node=projections_node)
 
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
@@ -1431,11 +1536,12 @@ class Projector(BaseChildNodeExtended):
 class Protocol(BaseNode):
     def __init__(
         self,
-        geometry: Union[str, None] = "NetworkInOut_1",
-        name: Union[str, None] = None,
-        type_: Union[str, None] = None,
-        version: Union[str, None] = None,
-        transmission: Union[str, None] = None,
+        geometry: Optional[str] = "NetworkInOut_1",
+        name: Optional[str] = None,
+        type_: Optional[str] = None,
+        version: Optional[str] = None,
+        transmission: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1444,7 +1550,7 @@ class Protocol(BaseNode):
         self.type = type_
         self.version = version
         self.transmission = transmission
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.geometry = xml_node.attrib.get("geometry")
@@ -1475,16 +1581,17 @@ class Protocol(BaseNode):
 class Alignment(BaseNode):
     def __init__(
         self,
-        geometry: Union[str, None] = "Beam",
-        up: Union[str, None] = "0,0,1",
-        direction: Union[str, None] = "0,0,-1",
+        geometry: Optional[str] = "Beam",
+        up: Optional[str] = "0,0,1",
+        direction: Optional[str] = "0,0,-1",
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.geometry = geometry
         self.up = up
         self.direction = direction
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.geometry = xml_node.attrib.get("geometry")
@@ -1509,14 +1616,15 @@ class Alignment(BaseNode):
 class Overwrite(BaseNode):
     def __init__(
         self,
-        universal: Union[str, None] = None,
-        target: Union[str, None] = None,
+        universal: Optional[str] = None,
+        target: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.universal = universal
         self.target = target
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.universal = xml_node.attrib.get("universal")
@@ -1536,16 +1644,17 @@ class Overwrite(BaseNode):
 class Connection(BaseNode):
     def __init__(
         self,
-        own: Union[str, None] = None,
-        other: Union[str, None] = None,
-        to_object: Union[str, None] = None,
+        own: Optional[str] = None,
+        other: Optional[str] = None,
+        to_object: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.own = own
         self.other = other
         self.to_object = to_object
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.own = xml_node.attrib.get("own")
@@ -1568,12 +1677,13 @@ class Connection(BaseNode):
 class Mapping(BaseNode):
     def __init__(
         self,
-        link_def: Union[str, None] = None,
-        ux: Union[int, None] = None,
-        uy: Union[int, None] = None,
-        ox: Union[int, None] = None,
-        oy: Union[int, None] = None,
-        rz: Union[float, None] = None,
+        link_def: Optional[str] = None,
+        ux: Optional[int] = None,
+        uy: Optional[int] = None,
+        ox: Optional[int] = None,
+        oy: Optional[int] = None,
+        rz: Optional[float] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1583,24 +1693,24 @@ class Mapping(BaseNode):
         self.ox = ox
         self.oy = oy
         self.rz = rz
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.link_def = xml_node.attrib.get("linkedDef")
         ux_node = xml_node.find("ux")
-        if ux_node is not None:
+        if ux_node is not None and ux_node.text is not None:
             self.ux = int(ux_node.text)
         uy_node = xml_node.find("uy")
-        if uy_node is not None:
+        if uy_node is not None and uy_node.text is not None:
             self.uy = int(uy_node.text)
         ox_node = xml_node.find("ox")
-        if ox_node is not None:
+        if ox_node is not None and ox_node.text is not None:
             self.ox = int(ox_node.text)
         oy_node = xml_node.find("oy")
-        if oy_node is not None:
+        if oy_node is not None and oy_node.text is not None:
             self.oy = int(oy_node.text)
         rz_node = xml_node.find("rz")
-        if rz_node is not None:
+        if rz_node is not None and rz_node.text is not None:
             self.rz = float(rz_node.text)
 
     def __str__(self):
@@ -1625,8 +1735,8 @@ class Gobo(BaseNode):
     def __init__(
         self,
         rotation: Union[str, float, None] = None,
-        filename: Union[str, None] = None,
-        xml_node: "Element" = None,
+        filename: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1651,12 +1761,13 @@ class CustomCommand(BaseNode):
     # TODO: split more: <CustomCommand>Body_Pan,f 50</CustomCommand>
     def __init__(
         self,
-        custom_command: Union[str, None] = None,
+        custom_command: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.custom_command = custom_command
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.custom_command = xml_node.text
@@ -1673,8 +1784,9 @@ class CustomCommand(BaseNode):
 class Projection(BaseNode):
     def __init__(
         self,
-        source: "Source" = None,
-        scale_handling: "ScaleHandeling" = None,
+        source: Optional["Source"] = None,
+        scale_handling: Optional["ScaleHandeling"] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1682,11 +1794,12 @@ class Projection(BaseNode):
         self.scale_handling = (
             scale_handling if scale_handling is not None else ScaleHandeling()
         )
-        super().__init__(*args, **kwargs)
+        super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        if xml_node.find("Source") is not None:
-            self.source = Source(xml_node=xml_node.find("Source"))
+        source_node = xml_node.find("Source")
+        if source_node is not None:
+            self.source = Source(xml_node=source_node)
         scale_handling_node = xml_node.find("ScaleHandeling")
         if scale_handling_node is not None:
             self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
@@ -1704,7 +1817,7 @@ class Projections(BaseNode):
     def __init__(
         self,
         projections: List["Projection"] = [],
-        xml_node: "Element" = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1726,10 +1839,10 @@ class Projections(BaseNode):
 class Source(BaseNode):
     def __init__(
         self,
-        linked_geometry: Union[str, None] = None,
-        type_: Union[str, None] = None,
-        value: Union[str, None] = None,
-        xml_node: "Element" = None,
+        linked_geometry: Optional[str] = None,
+        type_: Optional[str] = None,
+        value: Optional[str] = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
@@ -1761,7 +1874,7 @@ class Sources(BaseNode):
     def __init__(
         self,
         sources: List["Source"] = [],
-        xml_node: "Element" = None,
+        xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
