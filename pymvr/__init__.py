@@ -1,3 +1,27 @@
+# The MIT License (MIT)
+#
+# Copyright (C) 2023 vanous
+#
+# This file is part of pymvr.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the “Software”), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from typing import List, Union
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -67,14 +91,20 @@ class GeneralSceneDescriptionWriter:
         self.provider_version: str = __version__
         self.files_list: List[str] = []
         self.xml_root = ElementTree.Element(
-            "GeneralSceneDescription", verMajor=self.version_major, verMinor=self.version_minor, provider=self.provider, provider_version=self.provider_version
+            "GeneralSceneDescription",
+            verMajor=self.version_major,
+            verMinor=self.version_minor,
+            provider=self.provider,
+            provider_version=self.provider_version,
         )
 
     def write_mvr(self, path=None):
         if path is not None:
             if sys.version_info >= (3, 9):
                 ElementTree.indent(self.xml_root, space="    ", level=0)
-            xmlstr = ElementTree.tostring(self.xml_root, encoding="unicode", xml_declaration=True)
+            xmlstr = ElementTree.tostring(
+                self.xml_root, encoding="unicode", xml_declaration=True
+            )
             with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
                 z.writestr("GeneralSceneDescription.xml", xmlstr)
                 for file_path, file_name in self.files_list:
@@ -146,7 +176,9 @@ class Alignments(ContainerNode):
 
 class CustomCommands(ContainerNode):
     def _read_xml(self, xml_node: "Element"):
-        self.children = [CustomCommand(xml_node=i) for i in xml_node.findall("CustomCommand")]
+        self.children = [
+            CustomCommand(xml_node=i) for i in xml_node.findall("CustomCommand")
+        ]
 
 
 class Overwrites(ContainerNode):
@@ -414,7 +446,9 @@ class BaseChildNode(BaseNode):
         self.cast_shadow = cast_shadow
         self.addresses = addresses if addresses is not None else Addresses()
         self.alignments = alignments if alignments is not None else Alignments()
-        self.custom_commands = custom_commands if custom_commands is not None else CustomCommands()
+        self.custom_commands = (
+            custom_commands if custom_commands is not None else CustomCommands()
+        )
         self.overwrites = overwrites if overwrites is not None else Overwrites()
         self.connections = connections if connections is not None else Connections()
         self.child_list = child_list
@@ -429,7 +463,9 @@ class BaseChildNode(BaseNode):
         if _gdtf_spec is not None:
             self.gdtf_spec = _gdtf_spec.text
             if self.gdtf_spec is not None:
-                self.gdtf_spec = self.gdtf_spec.encode("utf-8").decode("cp437")  # IBM PC encoding
+                self.gdtf_spec = self.gdtf_spec.encode("utf-8").decode(
+                    "cp437"
+                )  # IBM PC encoding
             if self.gdtf_spec is not None and len(self.gdtf_spec) > 5:
                 if self.gdtf_spec[-5:].lower() != ".gdtf":
                     self.gdtf_spec = f"{self.gdtf_spec}.gdtf"
@@ -466,7 +502,9 @@ class BaseChildNode(BaseNode):
         if xml_node.find("Connections"):
             self.connections = Connections(xml_node=xml_node.find("Connections"))
         if xml_node.find("CustomCommands") is not None:
-            self.custom_commands = CustomCommands(xml_node=xml_node.find("CustomCommands"))
+            self.custom_commands = CustomCommands(
+                xml_node=xml_node.find("CustomCommands")
+            )
         if xml_node.find("Overwrites"):
             self.overwrites = Overwrites(xml_node=xml_node.find("Overwrites"))
         if xml_node.find("Classing") is not None:
@@ -504,11 +542,15 @@ class BaseChildNode(BaseNode):
             self.connections.to_xml(element)
 
         ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
-        ElementTree.SubElement(element, "FixtureIDNumeric").text = str(self.fixture_id_numeric)
+        ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
+            self.fixture_id_numeric
+        )
         if self.unit_number is not None:
             ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
         if self.custom_id_type is not None:
-            ElementTree.SubElement(element, "CustomIdType").text = str(self.custom_id_type)
+            ElementTree.SubElement(element, "CustomIdType").text = str(
+                self.custom_id_type
+            )
         if self.custom_id is not None:
             ElementTree.SubElement(element, "CustomId").text = str(self.custom_id)
 
@@ -565,7 +607,9 @@ class Data(BaseNode):
 
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
-        return ElementTree.Element(type(self).__name__, provider=self.provider, ver=self.ver)
+        return ElementTree.Element(
+            type(self).__name__, provider=self.provider, ver=self.ver
+        )
 
 
 class AUXData(BaseNode):
@@ -588,7 +632,9 @@ class AUXData(BaseNode):
         self.classes = [Class(xml_node=i) for i in xml_node.findall("Class")]
         self.symdefs = [Symdef(xml_node=i) for i in xml_node.findall("Symdef")]
         self.positions = [Position(xml_node=i) for i in xml_node.findall("Position")]
-        self.mapping_definitions = [MappingDefinition(xml_node=i) for i in xml_node.findall("MappingDefinition")]
+        self.mapping_definitions = [
+            MappingDefinition(xml_node=i) for i in xml_node.findall("MappingDefinition")
+        ]
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
@@ -620,7 +666,9 @@ class MappingDefinition(BaseNode):
         self.size_x = size_x
         self.size_y = size_y
         self.source = source
-        self.scale_handling = scale_handling if scale_handling is not None else ScaleHandeling()
+        self.scale_handling = (
+            scale_handling if scale_handling is not None else ScaleHandeling()
+        )
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -637,7 +685,9 @@ class MappingDefinition(BaseNode):
             self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         ElementTree.SubElement(element, "SizeX").text = str(self.size_x)
         ElementTree.SubElement(element, "SizeY").text = str(self.size_y)
         if self.scale_handling:
@@ -784,7 +834,9 @@ class GroupObject(BaseNode):
         return f"{self.name}"
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.classing:
             ElementTree.SubElement(element, "Classing").text = self.classing
@@ -850,18 +902,26 @@ class ChildList(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.scene_objects = [SceneObject(xml_node=i) for i in xml_node.findall("SceneObject")]
+        self.scene_objects = [
+            SceneObject(xml_node=i) for i in xml_node.findall("SceneObject")
+        ]
 
-        self.group_objects = [GroupObject(xml_node=i) for i in xml_node.findall("GroupObject")]
+        self.group_objects = [
+            GroupObject(xml_node=i) for i in xml_node.findall("GroupObject")
+        ]
 
-        self.focus_points = [FocusPoint(xml_node=i) for i in xml_node.findall("FocusPoint")]
+        self.focus_points = [
+            FocusPoint(xml_node=i) for i in xml_node.findall("FocusPoint")
+        ]
 
         self.fixtures = [Fixture(xml_node=i) for i in xml_node.findall("Fixture")]
 
         self.supports = [Support(xml_node=i) for i in xml_node.findall("Support")]
         self.trusses = [Truss(xml_node=i) for i in xml_node.findall("Truss")]
 
-        self.video_screens = [VideoScreen(xml_node=i) for i in xml_node.findall("VideoScreen")]
+        self.video_screens = [
+            VideoScreen(xml_node=i) for i in xml_node.findall("VideoScreen")
+        ]
 
         self.projectors = [Projector(xml_node=i) for i in xml_node.findall("Projector")]
 
@@ -914,7 +974,9 @@ class Layer(BaseNode):
             self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.child_list:
             self.child_list.to_xml(parent=element)
@@ -965,7 +1027,9 @@ class Address(BaseNode):
         universes = 512 * (self.universe - 1)
 
         raw_address = self.address + universes
-        address = ElementTree.SubElement(addresses, "Address", attrib={"break": str(self.dmx_break)})
+        address = ElementTree.SubElement(
+            addresses, "Address", attrib={"break": str(self.dmx_break)}
+        )
         address.text = str(raw_address)
 
 
@@ -989,7 +1053,9 @@ class Class(BaseNode):
         return f"{self.name}"
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         return element
 
 
@@ -1013,7 +1079,9 @@ class Position(BaseNode):
         return f"{self.name}"
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         return element
 
 
@@ -1040,7 +1108,9 @@ class Symdef(BaseNode):
         child_list = xml_node.find("ChildList")
         if child_list is not None:
             self.symbol = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
-            _geometry3d = [Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")]
+            _geometry3d = [
+                Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")
+            ]
         else:
             self.symbol = []
             _geometry3d = []
@@ -1049,7 +1119,9 @@ class Symdef(BaseNode):
         self.geometry3d = list(set(_geometry3d))
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         for geo in self.geometry3d:
             element.append(geo.to_xml())
         for sym in self.symbol:
@@ -1070,7 +1142,9 @@ class Geometry3D(BaseNode):
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.file_name = xml_node.attrib.get("fileName", "").encode("utf-8").decode("cp437")
+        self.file_name = (
+            xml_node.attrib.get("fileName", "").encode("utf-8").decode("cp437")
+        )
         if xml_node.find("Matrix") is not None:
             self.matrix = Matrix(str_repr=xml_node.find("Matrix").text)
 
@@ -1119,7 +1193,9 @@ class Symbol(BaseNode):
         return f"{self.uuid}"
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, uuid=self.uuid, symdef=self.symdef)
+        element = ElementTree.Element(
+            type(self).__name__, uuid=self.uuid, symdef=self.symdef
+        )
         Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
@@ -1138,7 +1214,9 @@ class Geometries(BaseNode):
 
     def _read_xml(self, xml_node: "Element"):
         self.symbol = [Symbol(xml_node=i) for i in xml_node.findall("Symbol")]
-        self.geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
+        self.geometry3d = [
+            Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")
+        ]
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
@@ -1184,7 +1262,9 @@ class FocusPoint(BaseNode):
         return f"{self.name}"
 
     def to_xml(self):
-        element = ElementTree.Element(type(self).__name__, name=self.name, uuid=self.uuid)
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
         Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.classing:
             ElementTree.SubElement(element, "Classing").text = self.classing
@@ -1599,7 +1679,9 @@ class Projection(BaseNode):
         **kwargs,
     ):
         self.source = source
-        self.scale_handling = scale_handling if scale_handling is not None else ScaleHandeling()
+        self.scale_handling = (
+            scale_handling if scale_handling is not None else ScaleHandeling()
+        )
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1630,7 +1712,9 @@ class Projections(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.projections = [Projection(xml_node=i) for i in xml_node.findall("Projection")]
+        self.projections = [
+            Projection(xml_node=i) for i in xml_node.findall("Projection")
+        ]
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
