@@ -5,6 +5,11 @@
 * push to master (via PR)
 * `git tag versionCode`
 * `git push origin versionCode`
+* License headers:
+* Make sure to install/update hawkeye
+* `cargo install hawkeye`
+* Update headers:
+* `hawkeye format`
 
 * generate wheel with pip wheel:
 

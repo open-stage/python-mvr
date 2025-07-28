@@ -1,3 +1,27 @@
+# The MIT License (MIT)
+#
+# Copyright (C) 2023 vanous
+#
+# This file is part of pymvr.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the “Software”), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import pytest
 
 
@@ -22,7 +46,9 @@ def process_mvr_child_list(child_list, mvr_scene):
 
 def process_mvr_fixture(fixture):
     assert fixture.gdtf_spec == "LED PAR 64 RGBW.gdtf"
-    assert fixture.addresses.address[0].universe == 1  # even though the uni is 0 in the file, 1 is by the spec
+    assert (
+        fixture.addresses.address[0].universe == 1
+    )  # even though the uni is 0 in the file, 1 is by the spec
     assert fixture.addresses.address[0].address == 1  # dtto
     assert fixture.gdtf_mode == "Default"
     assert fixture.matrix.matrix[3] == [5.0, 5.0, 5.0, 0]

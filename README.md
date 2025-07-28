@@ -143,30 +143,32 @@ project setup by running:
 uv sync
 ```
 
-### Typing
-
-- We try to type the main library, at this point, the
-  `--no-strict-optional` is needed for mypy tests to pass:
-
-```bash
-mypy pymvr/*py  --pretty  --no-strict-optional
-```
-
 ### Format
 
-- To format, use [black](https://github.com/psf/black) or
-  [ruff](https://docs.astral.sh/ruff/)
+- To format, use [ruff](https://docs.astral.sh/ruff/)
+
+```bash
+uv run ruff format pymvr/*
+```
+
+### Pre-commit hooks
+
+- You can use the pre-commit hooks
+
+```bash
+uv run pre-commit install
+```
 
 ### Testing
 
 - to test, use pytest
 
 ```bash
-pytest
+uv run pytest
 ```
 
 - to test typing with mypy use:
 
 ```bash
-pytest --mypy -m mypy pymvr/*py
+uv run pytest --mypy -m mypy pymvr/*py
 ```
