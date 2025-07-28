@@ -15,9 +15,7 @@ Used for example by [BlenderDMX](https://github.com/open-stage/blender-dmx).
 [PyPi page](https://pypi.org/project/pymvr/)
 
 [![Pytest](https://github.com/open-stage/python-mvr/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/run-tests.yaml)
-
 [![Check links in markdown](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml)
-
 ![GitHub Tag](https://img.shields.io/github/v/tag/open-stage/python-mvr)
 
 ## Installation
