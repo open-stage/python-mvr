@@ -8,6 +8,8 @@ See source code for documentation. Naming conventions, in general, are
 identical to that on the GDTF, CamelCase is replaced with
 underscore_delimiters.
 
+Used for example by [BlenderDMX](https://github.com/open-stage/blender-dmx).
+
 [Source code](https://github.com/open-stage/python-mvr)
 
 [PyPi page](https://pypi.org/project/pymvr/)
@@ -16,21 +18,31 @@ underscore_delimiters.
 
 [![Check links in markdown](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml)
 
+![GitHub Tag](https://img.shields.io/github/v/tag/open-stage/python-mvr)
+
 ## Installation
+
+- with uv:
+
+```bash
+uv add pymvr
+```
+
+- with pip
 
 ```bash
 pip install pymvr
 ```
 
-To install latest version from git via pip:
+### Latest development version (if exists on pypi.org)
 
-```python
-python -m pip install https://codeload.github.com/open-stage/python-mvr/zip/refs/heads/master
+```bash
+uv add pymvr --pre
 ```
 
 ## Usage
 
-### Reading
+### Reading MVR
 
 ```python
 import pymvr
@@ -40,7 +52,9 @@ for layer_index, layer in enumerate(mvr_file.scene.layers):
     ... #process data
 ```
 
-### Writing
+### Writing MVR
+
+#### Creating a new MVR
 
 ```python
 import pymvr
@@ -80,6 +94,32 @@ if fixture.gdtf_spec:
     # The list should contain tuples of (source_path, archive_name)
     files_to_pack.append((fixture.gdtf_spec, fixture.gdtf_spec))
 mvr_writer.files_list = list(set(files_to_pack))
+
+# 5. Write the MVR file
+output_path = Path("example.mvr")
+mvr_writer.write_mvr(output_path)
+
+print(f"MVR file written to {output_path.resolve()}")
+```
+
+#### Exporting loaded MVR
+
+```python
+import pymvr
+from pathlib import Path
+
+
+# 1. Read MVR file
+mvr_read = pymvr.GeneralSceneDescription("mvr_file.mvr")
+
+# 2. Create a writer instance
+mvr_writer = pymvr.GeneralSceneDescriptionWriter()
+
+# 3. Serialize the scene object into the writer's XML root
+mvr_read.scene.to_xml(parent=mvr_writer.xml_root)
+
+# 4. Add necesarry files if needed
+# Skipped in this example
 
 # 5. Write the MVR file
 output_path = Path("example.mvr")
