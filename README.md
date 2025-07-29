@@ -6,27 +6,30 @@ MVR specification as per https://gdtf.eu/mvr/prologue/introduction/
 
 See source code for documentation. Naming conventions, in general, are
 identical to that on the GDTF, CamelCase is replaced with
-underscore_delimiters.
+underscore\_delimiters.
 
-Used for example by [BlenderDMX](https://github.com/open-stage/blender-dmx).
+This library is used for example by [BlenderDMX](https://blenderdmx.eu)
+([BlenderDMX on GitHub](https://github.com/open-stage/blender-dmx)).
 
-[Source code](https://github.com/open-stage/python-mvr)
-
-[PyPi page](https://pypi.org/project/pymvr/)
+[GitHub Page](https://github.com/open-stage/python-mvr), [PyPi Page](https://pypi.org/project/pymvr/)
 
 [![Pytest](https://github.com/open-stage/python-mvr/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/run-tests.yaml)
 [![Check links in markdown](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml/badge.svg)](https://github.com/open-stage/python-mvr/actions/workflows/check-links.yaml)
 ![GitHub Tag](https://img.shields.io/github/v/tag/open-stage/python-mvr)
 
+## Status
+
+- Reading and Writing of most aspects of MVR should be covered.
+
 ## Installation
 
-- with uv:
+- With uv:
 
 ```bash
 uv add pymvr
 ```
 
-- with pip
+- With pip
 
 ```bash
 pip install pymvr
@@ -130,10 +133,6 @@ See [BlenderDMX](https://github.com/open-stage/blender-dmx) and
 [tests](https://github.com/open-stage/python-mvr/tree/master/tests) for
 reference implementation.
 
-## Status
-
-- Reading and Writing of all aspects of MVR should be covered.
-
 ## Development
 
 PRs appreciated. You can use [uv](https://docs.astral.sh/uv/) to get the
@@ -161,13 +160,13 @@ uv run pre-commit install
 
 ### Testing
 
-- to test, use pytest
+- To test, use pytest
 
 ```bash
 uv run pytest
 ```
 
-- to test typing with mypy use:
+- To test typing with mypy use:
 
 ```bash
 uv run pytest --mypy -m mypy pymvr/*py
