@@ -19,7 +19,12 @@ This library is used for example by [BlenderDMX](https://blenderdmx.eu)
 
 ## Status
 
-- Reading and Writing of most aspects of MVR should be covered.
+- Reading and Writing of most aspects of MVR 1.6 (DIN SPEC 15801:2023-12)
+  should be covered.
+- MVR-xchange is not implemented in this library but full Python implementation
+  exists in
+  [BlenderDMX](https://github.com/open-stage/blender-dmx/tree/main/mvrxchange)
+  and potentially could be moved here.
 
 ## Installation
 
@@ -131,7 +136,7 @@ print(f"MVR file written to {output_path.resolve()}")
 
 See [BlenderDMX](https://github.com/open-stage/blender-dmx) and
 [tests](https://github.com/open-stage/python-mvr/tree/master/tests) for
-reference implementation.
+reference implementation and usage examples.
 
 ## Development
 
