@@ -40,12 +40,6 @@ uv add pymvr
 pip install pymvr
 ```
 
-### Latest development version (if exists on pypi.org)
-
-```bash
-uv add pymvr --pre
-```
-
 ## Usage
 
 ### Reading MVR
@@ -59,6 +53,29 @@ for layer_index, layer in enumerate(mvr_file.scene.layers):
 ```
 
 ### Writing MVR
+
+#### Load and Export an MVR
+
+```python
+import pymvr
+from pathlib import Path
+
+# 1. Read MVR file
+mvr_read = pymvr.GeneralSceneDescription("mvr_file.mvr")
+
+# 2. Create a writer instance
+mvr_writer = pymvr.GeneralSceneDescriptionWriter()
+
+# 3. Serialize the scene object into the writer's XML root
+mvr_read.scene.to_xml(parent=mvr_writer.xml_root)
+
+# 4. Add necesarry files like GDTF fixtures, trusses, 3D objects and so on
+# Skipped in this example
+
+# 5. Write the MVR file
+output_path = Path("exported_mvr_file.mvr")
+mvr_writer.write_mvr(output_path)
+```
 
 #### Creating a new MVR
 
@@ -93,50 +110,27 @@ child_list.fixtures.append(fixture)
 # 3. Serialize the scene object into the writer's XML root
 scene_obj.to_xml(parent=mvr_writer.xml_root)
 
-# 4. Add any necessary files (like GDTF) to the MVR archive
-# (This example fixture doesn't have a GDTF file, so this list will be empty)
+# 4. Add any necessary files (like GDTF fixtures, trusses...) to the MVR archive
+#    The list should contain tuples of (file_path, GDTF_file_name)
 files_to_pack = []
 if fixture.gdtf_spec:
-    # The list should contain tuples of (source_path, archive_name)
     files_to_pack.append((fixture.gdtf_spec, fixture.gdtf_spec))
 mvr_writer.files_list = list(set(files_to_pack))
 
 # 5. Write the MVR file
-output_path = Path("example.mvr")
+output_path = Path("exported_mvr_file.mvr")
 mvr_writer.write_mvr(output_path)
-
-print(f"MVR file written to {output_path.resolve()}")
-```
-
-#### Exporting loaded MVR
-
-```python
-import pymvr
-from pathlib import Path
-
-
-# 1. Read MVR file
-mvr_read = pymvr.GeneralSceneDescription("mvr_file.mvr")
-
-# 2. Create a writer instance
-mvr_writer = pymvr.GeneralSceneDescriptionWriter()
-
-# 3. Serialize the scene object into the writer's XML root
-mvr_read.scene.to_xml(parent=mvr_writer.xml_root)
-
-# 4. Add necesarry files if needed
-# Skipped in this example
-
-# 5. Write the MVR file
-output_path = Path("example.mvr")
-mvr_writer.write_mvr(output_path)
-
-print(f"MVR file written to {output_path.resolve()}")
 ```
 
 See [BlenderDMX](https://github.com/open-stage/blender-dmx) and
 [tests](https://github.com/open-stage/python-mvr/tree/master/tests) for
 reference implementation and usage examples.
+
+## Changelog
+
+See
+[CHANGELOG](https://github.com/open-stage/python-mvr/blob/master/CHANGELOG.md)
+for details.
 
 ## Development
 
