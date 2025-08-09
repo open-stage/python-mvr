@@ -1,9 +1,10 @@
 ### Changelog
 
-### 1.0.0-dev0
+### 1.0.0
 
-* Breaking changes. There is now an additional .scene object, plus several
-  other collector objects. Look at the tests/readme for details.
+* Breaking changes, but updating is not complex. There is now an additional
+  .scene object, plus several other collector objects. Look at the tests/readme
+  for details.
 * Big refactor of structure - ensure that XML structure is followed in code
 * Implemented all MVR fields
 * Big refactor for export
