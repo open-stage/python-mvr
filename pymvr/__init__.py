@@ -31,7 +31,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "1.0.0"
+__version__ = "1.0.1-dev0"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -239,12 +239,12 @@ class Scene(BaseNode):
 class Layers(BaseNode):
     def __init__(
         self,
-        layers: List["Layer"] = [],
+        layers: Optional[List["Layer"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.layers = layers
+        self.layers = layers if layers is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -287,12 +287,12 @@ class Layers(BaseNode):
 class UserData(BaseNode):
     def __init__(
         self,
-        data: List["Data"] = [],
+        data: Optional[List["Data"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.data = data
+        self.data = data if data is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -385,8 +385,8 @@ class Network(BaseNode):
 class Addresses(BaseNode):
     def __init__(
         self,
-        address: List["Address"] = [],
-        network: List["Network"] = [],
+        address: Optional[List["Address"]] = None,
+        network: Optional[List["Network"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
@@ -420,7 +420,7 @@ class BaseChildNode(BaseNode):
         uuid: Optional[str] = None,
         gdtf_spec: Optional[str] = None,
         gdtf_mode: Optional[str] = None,
-        matrix: Matrix = Matrix(0),
+        matrix: Optional[Matrix] = None,
         classing: Optional[str] = None,
         fixture_id: Optional[str] = None,
         fixture_id_numeric: int = 0,
@@ -445,7 +445,7 @@ class BaseChildNode(BaseNode):
         self.uuid: str = uuid
         self.gdtf_spec = gdtf_spec
         self.gdtf_mode = gdtf_mode
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
         self.classing = classing
         self.fixture_id = fixture_id
         self.fixture_id_numeric = fixture_id_numeric
@@ -657,18 +657,20 @@ class Data(BaseNode):
 class AUXData(BaseNode):
     def __init__(
         self,
-        classes: List["Class"] = [],
-        symdefs: List["Symdef"] = [],
-        positions: List["Position"] = [],
-        mapping_definitions: List["MappingDefinition"] = [],
+        classes: Optional[List["Class"]] = None,
+        symdefs: Optional[List["Symdef"]] = None,
+        positions: Optional[List["Position"]] = None,
+        mapping_definitions: Optional[List["MappingDefinition"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.classes = classes
-        self.symdefs = symdefs
-        self.positions = positions
-        self.mapping_definitions = mapping_definitions
+        self.classes = classes if classes is not None else []
+        self.symdefs = symdefs if symdefs is not None else []
+        self.positions = positions if positions is not None else []
+        self.mapping_definitions = (
+            mapping_definitions if mapping_definitions is not None else []
+        )
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -750,7 +752,7 @@ class Fixture(BaseChildNode):
     def __init__(
         self,
         focus: Optional[str] = None,
-        color: Union["Color", str, None] = Color(),
+        color: Union["Color", str, None] = None,
         dmx_invert_pan: bool = False,
         dmx_invert_tilt: bool = False,
         position: Optional[str] = None,
@@ -765,7 +767,7 @@ class Fixture(BaseChildNode):
         **kwargs,
     ):
         self.focus = focus
-        self.color = color
+        self.color = color if color is not None else Color()
         self.dmx_invert_pan = dmx_invert_pan
         self.dmx_invert_tilt = dmx_invert_tilt
         self.position = position
@@ -875,7 +877,7 @@ class GroupObject(BaseNode):
         uuid: Optional[str] = None,
         classing: Optional[str] = None,
         child_list: Optional["ChildList"] = None,
-        matrix: Matrix = Matrix(0),
+        matrix: Optional[Matrix] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
@@ -884,7 +886,7 @@ class GroupObject(BaseNode):
         self.uuid = uuid
         self.classing = classing
         self.child_list = child_list
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -921,57 +923,26 @@ class GroupObject(BaseNode):
 class ChildList(BaseNode):
     def __init__(
         self,
-        scene_objects: List["SceneObject"] = [],
-        group_objects: List["GroupObject"] = [],
-        focus_points: List["FocusPoint"] = [],
-        fixtures: List["Fixture"] = [],
-        supports: List["Support"] = [],
-        trusses: List["Truss"] = [],
-        video_screens: List["VideoScreen"] = [],
-        projectors: List["Projector"] = [],
+        scene_objects: Optional[List["SceneObject"]] = None,
+        group_objects: Optional[List["GroupObject"]] = None,
+        focus_points: Optional[List["FocusPoint"]] = None,
+        fixtures: Optional[List["Fixture"]] = None,
+        supports: Optional[List["Support"]] = None,
+        trusses: Optional[List["Truss"]] = None,
+        video_screens: Optional[List["VideoScreen"]] = None,
+        projectors: Optional[List["Projector"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        if scene_objects is not None:
-            self.scene_objects = scene_objects
-        else:
-            self.scene_objects = []
-
-        if group_objects is not None:
-            self.group_objects = group_objects
-        else:
-            self.group_objects = []
-
-        if focus_points is not None:
-            self.focus_points = focus_points
-        else:
-            self.focus_points = []
-
-        if fixtures is not None:
-            self.fixtures = fixtures
-        else:
-            self.fixtures = []
-
-        if supports is not None:
-            self.supports = supports
-        else:
-            self.supports = []
-
-        if trusses is not None:
-            self.trusses = trusses
-        else:
-            self.trusses = []
-
-        if video_screens is not None:
-            self.video_screens = video_screens
-        else:
-            self.video_screens = []
-
-        if projectors is not None:
-            self.projectors = projectors
-        else:
-            self.projectors = []
+        self.scene_objects = scene_objects if scene_objects is not None else []
+        self.group_objects = group_objects if group_objects is not None else []
+        self.focus_points = focus_points if focus_points is not None else []
+        self.fixtures = fixtures if fixtures is not None else []
+        self.supports = supports if supports is not None else []
+        self.video_screens = video_screens if video_screens is not None else []
+        self.trusses = trusses if trusses is not None else []
+        self.projectors = projectors if projectors is not None else []
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -1025,7 +996,7 @@ class Layer(BaseNode):
         self,
         name: str = "",
         uuid: Optional[str] = None,
-        matrix: Matrix = Matrix(0),
+        matrix: Optional[Matrix] = None,
         child_list: Optional["ChildList"] = None,
         xml_node: Optional["Element"] = None,
         *args,
@@ -1036,7 +1007,7 @@ class Layer(BaseNode):
             uuid = str(py_uuid.uuid4())
         self.uuid = uuid
         self.child_list = child_list
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -1174,16 +1145,16 @@ class Symdef(BaseNode):
         self,
         uuid: Optional[str] = None,
         name: Optional[str] = None,
-        geometry3d: List["Geometry3D"] = [],
-        symbol: List["Symbol"] = [],
+        geometry3d: Optional[List["Geometry3D"]] = None,
+        symbol: Optional[List["Symbol"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.uuid = uuid
         self.name = name
-        self.geometry3d = geometry3d
-        self.symbol = symbol
+        self.geometry3d = geometry3d if geometry3d is not None else []
+        self.symbol = symbol if symbol is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1218,13 +1189,13 @@ class Geometry3D(BaseNode):
     def __init__(
         self,
         file_name: Optional[str] = None,
-        matrix: Matrix = Matrix(0),
+        matrix: Optional[Matrix] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.file_name = file_name
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1261,14 +1232,14 @@ class Symbol(BaseNode):
         self,
         uuid: Optional[str] = None,
         symdef: Optional[str] = None,
-        matrix: Matrix = Matrix(0),
+        matrix: Optional[Matrix] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
         self.uuid = uuid
         self.symdef = symdef
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1292,14 +1263,14 @@ class Symbol(BaseNode):
 class Geometries(BaseNode):
     def __init__(
         self,
-        geometry3d: List["Geometry3D"] = [],
-        symbol: List["Symbol"] = [],
+        geometry3d: Optional[List["Geometry3D"]] = None,
+        symbol: Optional[List["Symbol"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.geometry3d = geometry3d
-        self.symbol = symbol
+        self.geometry3d = geometry3d if geometry3d is not None else []
+        self.symbol = symbol if symbol is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1322,7 +1293,7 @@ class FocusPoint(BaseNode):
         self,
         uuid: Optional[str] = None,
         name: Optional[str] = None,
-        matrix: Matrix = Matrix(0),
+        matrix: Optional[Matrix] = None,
         classing: Optional[str] = None,
         geometries: Optional["Geometries"] = None,
         xml_node: Optional["Element"] = None,
@@ -1331,7 +1302,7 @@ class FocusPoint(BaseNode):
     ):
         self.name = name
         self.uuid = uuid
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
         self.classing = classing
         if geometries is None:
             geometries = Geometries()
@@ -1816,12 +1787,12 @@ class Projection(BaseNode):
 class Projections(BaseNode):
     def __init__(
         self,
-        projections: List["Projection"] = [],
+        projections: Optional[List["Projection"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.projections = projections
+        self.projections = projections if projections is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1873,12 +1844,12 @@ class Source(BaseNode):
 class Sources(BaseNode):
     def __init__(
         self,
-        sources: List["Source"] = [],
+        sources: Optional[List["Source"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.sources = sources
+        self.sources = sources if sources is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
