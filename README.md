@@ -69,10 +69,13 @@ mvr_writer = pymvr.GeneralSceneDescriptionWriter()
 # 3. Serialize the scene object into the writer's XML root
 mvr_read.scene.to_xml(parent=mvr_writer.xml_root)
 
-# 4. Add necesarry files like GDTF fixtures, trusses, 3D objects and so on
+# 4. Serialize the user_data object into the writer's XML root
+mvr_read.user_data.to_xml(parent=mvr_writer.xml_root)
+
+# 5. Add necesarry files like GDTF fixtures, trusses, 3D objects and so on
 # Skipped in this example
 
-# 5. Write the MVR file
+# 6. Write the MVR file
 output_path = Path("exported_mvr_file.mvr")
 mvr_writer.write_mvr(output_path)
 ```

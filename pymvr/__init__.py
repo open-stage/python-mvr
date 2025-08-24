@@ -80,10 +80,6 @@ class GeneralSceneDescription:
 class GeneralSceneDescriptionWriter:
     """Creates MVR zip archive with packed GeneralSceneDescription xml and other files"""
 
-    # Currently, MVR creation is manual, outside of the library.
-    # The to_xml() often takes a parent and then creates a ElementTree.SubElement.
-    # For complete, automatic conversion of an mvr object to xml, we need to adjust all the to_xml methods
-
     def __init__(self):
         self.version_major: str = "1"
         self.version_minor: str = "6"
@@ -103,7 +99,7 @@ class GeneralSceneDescriptionWriter:
             if sys.version_info >= (3, 9):
                 ElementTree.indent(self.xml_root, space="    ", level=0)
             xmlstr = ElementTree.tostring(
-                self.xml_root, encoding="unicode", xml_declaration=True
+                self.xml_root, encoding="UTF-8", xml_declaration=True
             )
             with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
                 z.writestr("GeneralSceneDescription.xml", xmlstr)
@@ -648,7 +644,6 @@ class Data(BaseNode):
         return f"{self.provider} {self.ver}"
 
     def to_xml(self):
-        attributes = {"name": self.name, "uuid": self.uuid}
         return ElementTree.Element(
             type(self).__name__, provider=self.provider, ver=self.ver
         )
@@ -742,9 +737,10 @@ class MappingDefinition(BaseNode):
         )
         ElementTree.SubElement(element, "SizeX").text = str(self.size_x)
         ElementTree.SubElement(element, "SizeY").text = str(self.size_y)
+        if self.source:
+            element.append(self.source.to_xml())
         if self.scale_handling:
             self.scale_handling.to_xml(element)
-        # TODO source
         return element
 
 
