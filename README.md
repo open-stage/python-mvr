@@ -170,3 +170,18 @@ uv run pytest
 ```bash
 uv run pytest --mypy -m mypy pymvr/*py
 ```
+
+## Citation
+
+If you use this library in your research, publication, or software project,
+please cite it as follows:
+
+```bibtex
+@software{pymvr2025,
+  title        = {pyMVR: Python Library for My Virtual Rig},
+  author       = {{OpenStage}},
+  year         = {2025},
+  version      = {1.0.1},
+  url          = {https://github.com/open-stage/python-mvr}
+}
+```
