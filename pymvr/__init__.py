@@ -31,7 +31,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
