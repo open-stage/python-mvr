@@ -31,7 +31,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "1.0.2"
+__version__ = "1.0.3.dev0"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -229,7 +229,6 @@ class Scene(BaseNode):
             self.layers.to_xml(element)
         if self.aux_data:
             self.aux_data.to_xml(element)
-        return element
 
 
 class Layers(BaseNode):
@@ -298,7 +297,6 @@ class UserData(BaseNode):
         element = ElementTree.SubElement(parent, type(self).__name__)
         for _data in self.data:
             element.append(_data.to_xml())
-        return element
 
 
 class ScaleHandelingEnum(Enum):
@@ -412,13 +410,13 @@ class Addresses(BaseNode):
 class BaseChildNode(BaseNode):
     def __init__(
         self,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         uuid: Optional[str] = None,
         gdtf_spec: Optional[str] = None,
         gdtf_mode: Optional[str] = None,
         matrix: Optional[Matrix] = None,
         classing: Optional[str] = None,
-        fixture_id: Optional[str] = None,
+        fixture_id: Optional[str] = "",
         fixture_id_numeric: int = 0,
         unit_number: int = 0,
         custom_id: int = 0,
@@ -461,7 +459,7 @@ class BaseChildNode(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -487,7 +485,7 @@ class BaseChildNode(BaseNode):
 
         _fixture_id_node = xml_node.find("FixtureID")
         if _fixture_id_node is not None:
-            self.fixture_id = _fixture_id_node.text
+            self.fixture_id = _fixture_id_node.text or ""
 
         _fixture_id_numeric_node = xml_node.find("FixtureIDNumeric")
         if (
@@ -572,7 +570,9 @@ class BaseChildNode(BaseNode):
         if self.connections:
             self.connections.to_xml(element)
 
-        ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
+        ElementTree.SubElement(element, "FixtureID").text = (
+            str(self.fixture_id or "") or ""
+        )
         ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
             self.fixture_id_numeric
         )
@@ -692,7 +692,7 @@ class AUXData(BaseNode):
 class MappingDefinition(BaseNode):
     def __init__(
         self,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         uuid: Optional[str] = None,
         size_x: int = 0,
         size_y: int = 0,
@@ -715,7 +715,7 @@ class MappingDefinition(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -873,7 +873,7 @@ class Fixture(BaseChildNode):
 class GroupObject(BaseNode):
     def __init__(
         self,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         uuid: Optional[str] = None,
         classing: Optional[str] = None,
         child_list: Optional["ChildList"] = None,
@@ -893,7 +893,7 @@ class GroupObject(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -1016,7 +1016,7 @@ class Layer(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name", "")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -1094,7 +1094,7 @@ class Class(BaseNode):
     def __init__(
         self,
         uuid: Optional[str] = None,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
@@ -1106,7 +1106,7 @@ class Class(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -1125,7 +1125,7 @@ class Position(BaseNode):
     def __init__(
         self,
         uuid: Optional[str] = None,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
@@ -1137,7 +1137,7 @@ class Position(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -1274,7 +1274,7 @@ class Symdef(BaseNode):
     def __init__(
         self,
         uuid: Optional[str] = None,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         child_list: Optional["SymdefChildList"] = None,
         xml_node: Optional["Element"] = None,
         *args,
@@ -1288,7 +1288,7 @@ class Symdef(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
@@ -1310,7 +1310,7 @@ class FocusPoint(BaseNode):
     def __init__(
         self,
         uuid: Optional[str] = None,
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         matrix: Optional[Matrix] = None,
         classing: Optional[str] = None,
         geometries: Optional["Geometries"] = None,
@@ -1334,7 +1334,7 @@ class FocusPoint(BaseNode):
         uuid = xml_node.attrib.get("uuid")
         if uuid is not None:
             self.uuid = uuid
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         matrix_node = xml_node.find("Matrix")
         if matrix_node is not None and matrix_node.text is not None:
             self.matrix = Matrix(str_repr=matrix_node.text)
@@ -1527,16 +1527,10 @@ class Projector(BaseChildNodeExtended):
 
 
 class Protocol(BaseNode):
-    geometry: Optional[str]
-    name: Optional[str]
-    type: Optional[str]
-    version: Optional[str]
-    transmission: Optional[str]
-
     def __init__(
         self,
         geometry: Optional[str] = "NetworkInOut_1",
-        name: Optional[str] = None,
+        name: Optional[str] = "",
         type_: Optional[str] = None,
         version: Optional[str] = None,
         transmission: Optional[str] = None,
@@ -1553,7 +1547,7 @@ class Protocol(BaseNode):
 
     def _read_xml(self, xml_node: "Element"):
         self.geometry = xml_node.attrib.get("geometry")
-        self.name = xml_node.attrib.get("name")
+        self.name = xml_node.attrib.get("name") or ""
         self.type = xml_node.attrib.get("type")
         self.version = xml_node.attrib.get("version")
         self.transmission = xml_node.attrib.get("transmission")
