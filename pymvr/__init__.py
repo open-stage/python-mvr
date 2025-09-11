@@ -703,6 +703,8 @@ class MappingDefinition(BaseNode):
         **kwargs,
     ):
         self.name = name
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
         self.uuid = uuid
         self.size_x = size_x
         self.size_y = size_y
@@ -714,7 +716,9 @@ class MappingDefinition(BaseNode):
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
 
         size_x_node = xml_node.find("SizeX")
         if size_x_node is not None and size_x_node.text is not None:
@@ -879,7 +883,9 @@ class GroupObject(BaseNode):
         **kwargs,
     ):
         self.name = name
-        self.uuid = uuid
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
+        self.uuid: str = uuid
         self.classing = classing
         self.child_list = child_list
         self.matrix = matrix if matrix is not None else Matrix(0)
@@ -888,7 +894,9 @@ class GroupObject(BaseNode):
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
         classing_node = xml_node.find("Classing")
         if classing_node is not None:
             self.classing = classing_node.text
@@ -1091,13 +1099,17 @@ class Class(BaseNode):
         *args,
         **kwargs,
     ):
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
         self.uuid = uuid
         self.name = name
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
 
     def __str__(self):
         return f"{self.name}"
@@ -1118,13 +1130,17 @@ class Position(BaseNode):
         *args,
         **kwargs,
     ):
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
         self.uuid = uuid
         self.name = name
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
         self.name = xml_node.attrib.get("name")
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
 
     def __str__(self):
         return f"{self.name}"
@@ -1133,51 +1149,6 @@ class Position(BaseNode):
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        return element
-
-
-class Symdef(BaseNode):
-    def __init__(
-        self,
-        uuid: Optional[str] = None,
-        name: Optional[str] = None,
-        geometry3d: Optional[List["Geometry3D"]] = None,
-        symbol: Optional[List["Symbol"]] = None,
-        xml_node: Optional["Element"] = None,
-        *args,
-        **kwargs,
-    ):
-        self.uuid = uuid
-        self.name = name
-        self.geometry3d = geometry3d if geometry3d is not None else []
-        self.symbol = symbol if symbol is not None else []
-        super().__init__(xml_node, *args, **kwargs)
-
-    def _read_xml(self, xml_node: "Element"):
-        self.name = xml_node.attrib.get("name")
-        self.uuid = xml_node.attrib.get("uuid")
-
-        child_list = xml_node.find("ChildList")
-        if child_list is not None:
-            self.symbol = [Symbol(xml_node=i) for i in child_list.findall("Symbol")]
-            _geometry3d = [
-                Geometry3D(xml_node=i) for i in child_list.findall("Geometry3D")
-            ]
-        else:
-            self.symbol = []
-            _geometry3d = []
-
-        # sometimes the list of geometry3d is full of duplicates, eliminate them here
-        self.geometry3d = list(set(_geometry3d))
-
-    def to_xml(self):
-        element = ElementTree.Element(
-            type(self).__name__, name=self.name, uuid=self.uuid
-        )
-        for geo in self.geometry3d:
-            element.append(geo.to_xml())
-        for sym in self.symbol:
-            element.append(sym.to_xml())
         return element
 
 
@@ -1233,13 +1204,17 @@ class Symbol(BaseNode):
         *args,
         **kwargs,
     ):
-        self.uuid = uuid
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
+        self.uuid: str = uuid
         self.symdef = symdef
         self.matrix = matrix if matrix is not None else Matrix(0)
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
         self.symdef = xml_node.attrib.get("symdef")
         matrix_node = xml_node.find("Matrix")
         if matrix_node is not None and matrix_node.text is not None:
@@ -1284,6 +1259,53 @@ class Geometries(BaseNode):
         return element
 
 
+class SymdefChildList(Geometries):
+    # this is like the Geometries class, but called ChildList
+    def to_xml(self, parent: Element):
+        element = ElementTree.SubElement(parent, "ChildList")
+        for geo in self.geometry3d:
+            element.append(geo.to_xml())
+        for sym in self.symbol:
+            element.append(sym.to_xml())
+        return element
+
+
+class Symdef(BaseNode):
+    def __init__(
+        self,
+        uuid: Optional[str] = None,
+        name: Optional[str] = None,
+        child_list: Optional["SymdefChildList"] = None,
+        xml_node: Optional["Element"] = None,
+        *args,
+        **kwargs,
+    ):
+        self.name = name
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
+        self.uuid: str = uuid
+        self.child_list = child_list
+        super().__init__(xml_node, *args, **kwargs)
+
+    def _read_xml(self, xml_node: "Element"):
+        self.name = xml_node.attrib.get("name")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
+
+        child_list_node = xml_node.find("ChildList")
+        if child_list_node is not None:
+            self.child_list = SymdefChildList(xml_node=child_list_node)
+
+    def to_xml(self):
+        element = ElementTree.Element(
+            type(self).__name__, name=self.name, uuid=self.uuid
+        )
+        if self.child_list:
+            self.child_list.to_xml(parent=element)
+        return element
+
+
 class FocusPoint(BaseNode):
     def __init__(
         self,
@@ -1297,7 +1319,9 @@ class FocusPoint(BaseNode):
         **kwargs,
     ):
         self.name = name
-        self.uuid = uuid
+        if uuid is None:
+            uuid = str(py_uuid.uuid4())
+        self.uuid: str = uuid
         self.matrix = matrix if matrix is not None else Matrix(0)
         self.classing = classing
         if geometries is None:
@@ -1307,7 +1331,9 @@ class FocusPoint(BaseNode):
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.uuid = xml_node.attrib.get("uuid")
+        uuid = xml_node.attrib.get("uuid")
+        if uuid is not None:
+            self.uuid = uuid
         self.name = xml_node.attrib.get("name")
         matrix_node = xml_node.find("Matrix")
         if matrix_node is not None and matrix_node.text is not None:
@@ -1501,6 +1527,12 @@ class Projector(BaseChildNodeExtended):
 
 
 class Protocol(BaseNode):
+    geometry: Optional[str]
+    name: Optional[str]
+    type: Optional[str]
+    version: Optional[str]
+    transmission: Optional[str]
+
     def __init__(
         self,
         geometry: Optional[str] = "NetworkInOut_1",
@@ -1546,6 +1578,10 @@ class Protocol(BaseNode):
 
 
 class Alignment(BaseNode):
+    geometry: Optional[str]
+    up: Optional[str]
+    direction: Optional[str]
+
     def __init__(
         self,
         geometry: Optional[str] = "Beam",
@@ -1589,12 +1625,12 @@ class Overwrite(BaseNode):
         *args,
         **kwargs,
     ):
-        self.universal = universal
+        self.universal = universal if universal is not None else ""
         self.target = target
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.universal = xml_node.attrib.get("universal")
+        self.universal = xml_node.attrib.get("universal") or ""
         self.target = xml_node.attrib.get("target")
 
     def __str__(self):
