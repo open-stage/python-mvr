@@ -98,11 +98,11 @@ class GeneralSceneDescriptionWriter:
         if path is not None:
             if sys.version_info >= (3, 9):
                 ElementTree.indent(self.xml_root, space="    ", level=0)
-            xmlstr = ElementTree.tostring(
-                self.xml_root, encoding="UTF-8", xml_declaration=True
-            )
+            xmlstr = ElementTree.tostring(self.xml_root, encoding="unicode")
+            dec = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
+            initxml = dec + xmlstr
             with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-                z.writestr("GeneralSceneDescription.xml", xmlstr)
+                z.writestr("GeneralSceneDescription.xml", initxml)
                 for file_path, file_name in self.files_list:
                     try:
                         z.write(file_path, arcname=file_name)
@@ -419,11 +419,11 @@ class BaseChildNode(BaseNode):
         matrix: Optional[Matrix] = None,
         classing: Optional[str] = None,
         fixture_id: Optional[str] = None,
-        fixture_id_numeric: int = 0,
-        unit_number: int = 0,
-        custom_id: int = 0,
-        custom_id_type: int = 0,
-        cast_shadow: bool = False,
+        fixture_id_numeric: Optional[int] = 0,
+        unit_number: Optional[int] = 0,
+        custom_id: Optional[int] = None,
+        custom_id_type: Optional[int] = None,
+        cast_shadow: Optional[bool] = False,
         addresses: Optional["Addresses"] = None,
         alignments: Optional["Alignments"] = None,
         custom_commands: Optional["CustomCommands"] = None,
@@ -572,12 +572,16 @@ class BaseChildNode(BaseNode):
         if self.connections:
             self.connections.to_xml(element)
 
-        ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
-        ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
-            self.fixture_id_numeric
+        if self.fixture_id:
+            ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
+
+        if self.fixture_id_numeric:
+            ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
+                self.fixture_id_numeric
         )
-        if self.unit_number is not None:
+        if self.unit_number:
             ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
+
         if self.custom_id_type is not None:
             ElementTree.SubElement(element, "CustomIdType").text = str(
                 self.custom_id_type
@@ -882,7 +886,7 @@ class GroupObject(BaseNode):
         self.uuid = uuid
         self.classing = classing
         self.child_list = child_list
-        self.matrix = matrix if matrix is not None else Matrix(0)
+        self.matrix = matrix
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -908,7 +912,8 @@ class GroupObject(BaseNode):
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.classing:
             ElementTree.SubElement(element, "Classing").text = self.classing
         if self.child_list:
@@ -927,6 +932,7 @@ class ChildList(BaseNode):
         trusses: Optional[List["Truss"]] = None,
         video_screens: Optional[List["VideoScreen"]] = None,
         projectors: Optional[List["Projector"]] = None,
+        geometry3d: Optional[List["Geometry3D"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
@@ -939,6 +945,7 @@ class ChildList(BaseNode):
         self.video_screens = video_screens if video_screens is not None else []
         self.trusses = trusses if trusses is not None else []
         self.projectors = projectors if projectors is not None else []
+        self.geometry3d = geometry3d if geometry3d is not None else []
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -965,6 +972,7 @@ class ChildList(BaseNode):
         ]
 
         self.projectors = [Projector(xml_node=i) for i in xml_node.findall("Projector")]
+        self.geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
@@ -984,6 +992,8 @@ class ChildList(BaseNode):
             element.append(video_screen.to_xml())
         for projector in self.projectors:
             element.append(projector.to_xml())
+        for geometry3d in self.geometry3d:
+            element.append(geometry3d.to_xml())
         return element
 
 
@@ -1003,7 +1013,7 @@ class Layer(BaseNode):
             uuid = str(py_uuid.uuid4())
         self.uuid = uuid
         self.child_list = child_list
-        self.matrix = matrix if matrix is not None else Matrix(0)
+        self.matrix = matrix
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -1025,7 +1035,8 @@ class Layer(BaseNode):
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.child_list:
             self.child_list.to_xml(parent=element)
         return element
@@ -1141,6 +1152,7 @@ class Symdef(BaseNode):
         self,
         uuid: Optional[str] = None,
         name: Optional[str] = None,
+        child_list: Optional["ChildList"] = None,
         geometry3d: Optional[List["Geometry3D"]] = None,
         symbol: Optional[List["Symbol"]] = None,
         xml_node: Optional["Element"] = None,
@@ -1149,6 +1161,7 @@ class Symdef(BaseNode):
     ):
         self.uuid = uuid
         self.name = name
+        self.child_list = child_list
         self.geometry3d = geometry3d if geometry3d is not None else []
         self.symbol = symbol if symbol is not None else []
         super().__init__(xml_node, *args, **kwargs)
@@ -1174,6 +1187,8 @@ class Symdef(BaseNode):
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
+        if self.child_list:
+            self.child_list.to_xml(element)
         for geo in self.geometry3d:
             element.append(geo.to_xml())
         for sym in self.symbol:
@@ -1191,7 +1206,7 @@ class Geometry3D(BaseNode):
         **kwargs,
     ):
         self.file_name = file_name
-        self.matrix = matrix if matrix is not None else Matrix(0)
+        self.matrix = matrix
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1219,7 +1234,8 @@ class Geometry3D(BaseNode):
 
     def to_xml(self):
         element = ElementTree.Element(type(self).__name__, fileName=self.file_name)
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
 
@@ -1235,7 +1251,7 @@ class Symbol(BaseNode):
     ):
         self.uuid = uuid
         self.symdef = symdef
-        self.matrix = matrix if matrix is not None else Matrix(0)
+        self.matrix = matrix
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1252,7 +1268,8 @@ class Symbol(BaseNode):
         element = ElementTree.Element(
             type(self).__name__, uuid=self.uuid, symdef=self.symdef
         )
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
 
