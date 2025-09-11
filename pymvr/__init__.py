@@ -573,12 +573,14 @@ class BaseChildNode(BaseNode):
             self.connections.to_xml(element)
 
         if self.fixture_id:
-            ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id) or "0"
+            ElementTree.SubElement(element, "FixtureID").text = (
+                str(self.fixture_id) or "0"
+            )
 
         if self.fixture_id_numeric:
             ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
                 self.fixture_id_numeric
-        )
+            )
         if self.unit_number:
             ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
 
@@ -886,7 +888,7 @@ class GroupObject(BaseNode):
         self.uuid = uuid
         self.classing = classing
         self.child_list = child_list
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -909,10 +911,13 @@ class GroupObject(BaseNode):
         return f"{self.name}"
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        if self.matrix:
+        if self.matrix and check_mtx:
             Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.classing:
             ElementTree.SubElement(element, "Classing").text = self.classing
@@ -972,7 +977,9 @@ class ChildList(BaseNode):
         ]
 
         self.projectors = [Projector(xml_node=i) for i in xml_node.findall("Projector")]
-        self.geometry3d = [Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")]
+        self.geometry3d = [
+            Geometry3D(xml_node=i) for i in xml_node.findall("Geometry3D")
+        ]
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
@@ -1013,7 +1020,7 @@ class Layer(BaseNode):
             uuid = str(py_uuid.uuid4())
         self.uuid = uuid
         self.child_list = child_list
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
 
         super().__init__(xml_node, *args, **kwargs)
 
@@ -1032,10 +1039,13 @@ class Layer(BaseNode):
             self.matrix = Matrix(str_repr=matrix_node.text)
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        if self.matrix:
+        if self.matrix and check_mtx:
             Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.child_list:
             self.child_list.to_xml(parent=element)
@@ -1206,7 +1216,7 @@ class Geometry3D(BaseNode):
         **kwargs,
     ):
         self.file_name = file_name
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1233,8 +1243,11 @@ class Geometry3D(BaseNode):
         return hash((self.file_name, str(self.matrix)))
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(type(self).__name__, fileName=self.file_name)
-        if self.matrix:
+        if self.matrix and check_mtx:
             Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
@@ -1251,7 +1264,7 @@ class Symbol(BaseNode):
     ):
         self.uuid = uuid
         self.symdef = symdef
-        self.matrix = matrix
+        self.matrix = matrix if matrix is not None else Matrix(0)
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -1265,10 +1278,13 @@ class Symbol(BaseNode):
         return f"{self.uuid}"
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(
             type(self).__name__, uuid=self.uuid, symdef=self.symdef
         )
-        if self.matrix:
+        if self.matrix and check_mtx:
             Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
