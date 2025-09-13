@@ -31,7 +31,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "1.0.3.dev2"
+__version__ = "1.0.3.dev9"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -207,7 +207,7 @@ class Scene(BaseNode):
         *args,
         **kwargs,
     ):
-        self.layers = layers
+        self.layers = layers if layers else Layers()
         self.aux_data = aux_data
         super().__init__(xml_node, *args, **kwargs)
 
@@ -215,6 +215,8 @@ class Scene(BaseNode):
         layers_node = xml_node.find("Layers")
         if layers_node is not None:
             self.layers = Layers(xml_node=layers_node)
+        else:
+            self.layers = Layers()
 
         aux_data_collect = xml_node.find("AUXData")
 
@@ -225,7 +227,7 @@ class Scene(BaseNode):
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, "Scene")
-        if self.layers:
+        if self.layers is not None:
             self.layers.to_xml(element)
         if self.aux_data:
             self.aux_data.to_xml(element)
