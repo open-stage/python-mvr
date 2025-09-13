@@ -1,5 +1,22 @@
 ### Changelog
 
+### 1.0.3
+
+* Ensure that layers are created in XML
+* Fix header - providerVersion
+* Handle empty names
+* Make Symdefs to follow XML
+
+### 1.0.2
+
+* Change export XML declaration
+* Add missing Source XML export to MappingDefinition
+* Remove unused export attributes from Data()
+
+### 1.0.1
+
+* Adjust default class attributes to prevent mutable shared data
+
 ### 1.0.0
 
 * Breaking changes, but updating is not complex. There is now an additional
