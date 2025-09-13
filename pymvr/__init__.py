@@ -31,7 +31,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "1.0.3"
+__version__ = "1.0.4.dev0"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -909,10 +909,14 @@ class GroupObject(BaseNode):
         return f"{self.name}"
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix and check_mtx:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.classing:
             ElementTree.SubElement(element, "Classing").text = self.classing
         if self.child_list:
@@ -1026,10 +1030,14 @@ class Layer(BaseNode):
             self.matrix = Matrix(str_repr=matrix_node.text)
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix and check_mtx:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         if self.child_list:
             self.child_list.to_xml(parent=element)
         return element
@@ -1185,8 +1193,12 @@ class Geometry3D(BaseNode):
         return hash((self.file_name, str(self.matrix)))
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(type(self).__name__, fileName=self.file_name)
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix and check_mtx:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
 
@@ -1220,10 +1232,14 @@ class Symbol(BaseNode):
         return f"{self.uuid}"
 
     def to_xml(self):
+        check_mtx = any(
+            isinstance(i, float) for i in set().union(sum(self.matrix.matrix[:-1], []))
+        )
         element = ElementTree.Element(
             type(self).__name__, uuid=self.uuid, symdef=self.symdef
         )
-        Matrix(self.matrix.matrix).to_xml(parent=element)
+        if self.matrix and check_mtx:
+            Matrix(self.matrix.matrix).to_xml(parent=element)
         return element
 
 
