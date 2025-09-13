@@ -418,11 +418,11 @@ class BaseChildNode(BaseNode):
         gdtf_mode: Optional[str] = None,
         matrix: Optional[Matrix] = None,
         classing: Optional[str] = None,
-        fixture_id: Optional[str] = "",
-        fixture_id_numeric: int = 0,
-        unit_number: int = 0,
-        custom_id: int = 0,
-        custom_id_type: int = 0,
+        fixture_id: Optional[str] = None,
+        fixture_id_numeric: Optional[int] = None,
+        unit_number: Optional[int] = None,
+        custom_id: Optional[int] = None,
+        custom_id_type: Optional[int] = None,
         cast_shadow: bool = False,
         addresses: Optional["Addresses"] = None,
         alignments: Optional["Alignments"] = None,
@@ -572,12 +572,14 @@ class BaseChildNode(BaseNode):
         if self.connections:
             self.connections.to_xml(element)
 
-        ElementTree.SubElement(element, "FixtureID").text = (
-            str(self.fixture_id or "") or ""
-        )
-        ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
-            self.fixture_id_numeric
-        )
+        if self.fixture_id is not None:
+            ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id)
+
+        if self.fixture_id_numeric is not None:
+            ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
+                self.fixture_id_numeric
+            )
+
         if self.unit_number is not None:
             ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
         if self.custom_id_type is not None:
