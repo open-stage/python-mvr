@@ -31,7 +31,7 @@ import uuid as py_uuid
 from .value import Matrix, Color  # type: ignore
 from enum import Enum
 
-__version__ = "1.0.3.dev0"
+__version__ = "1.0.3.dev2"
 
 
 def _find_root(pkg: "zipfile.ZipFile") -> "ElementTree.Element":
@@ -91,7 +91,7 @@ class GeneralSceneDescriptionWriter:
             verMajor=self.version_major,
             verMinor=self.version_minor,
             provider=self.provider,
-            provider_version=self.provider_version,
+            providerVersion=self.provider_version,
         )
 
     def write_mvr(self, path: Optional[str] = None):
@@ -761,7 +761,6 @@ class Fixture(BaseChildNode):
         protocols: Optional["Protocols"] = None,
         mappings: Optional["Mappings"] = None,
         gobo: Optional["Gobo"] = None,
-        unit_number: int = 0,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
@@ -776,7 +775,6 @@ class Fixture(BaseChildNode):
         self.protocols = protocols if protocols is not None else Protocols()
         self.mappings = mappings if mappings is not None else Mappings()
         self.gobo = gobo
-        self.unit_number = unit_number
         kwargs["xml_node"] = xml_node
         super().__init__(*args, **kwargs)
 
@@ -825,10 +823,6 @@ class Fixture(BaseChildNode):
         if gobo_node is not None:
             self.gobo = Gobo(xml_node=gobo_node)
 
-        unit_number_node = xml_node.find("UnitNumber")
-        if unit_number_node is not None and unit_number_node.text is not None:
-            self.unit_number = int(unit_number_node.text)
-
     def to_xml(self):
         attributes = {"name": self.name, "uuid": self.uuid}
         if self.multipatch:
@@ -861,8 +855,6 @@ class Fixture(BaseChildNode):
             self.mappings.to_xml(element)
         if self.gobo:
             element.append(self.gobo.to_xml())
-
-        ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
 
         return element
 
