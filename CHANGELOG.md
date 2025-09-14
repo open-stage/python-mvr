@@ -1,5 +1,11 @@
 ### Changelog
 
+### 1.0.4
+
+* Add test for MVR read-write round-trip
+* Export matrix only if it carries values
+* Export FixtureIDs only if not none
+
 ### 1.0.3
 
 * Ensure that layers are created in XML
