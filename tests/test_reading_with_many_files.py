@@ -27,7 +27,7 @@ import os
 from pathlib import Path
 
 
-def test_with_file(request, pymvr_module):
+def test_reading_with_many_files(request, pymvr_module):
     # uv run pytest --file-path=../../gdtfs/ -s
     file_path = request.config.getoption("--file-path")
 

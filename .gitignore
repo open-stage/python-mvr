@@ -9,3 +9,4 @@ devel/
 *whl
 *.mvr
 uv.lock
+mvr-spec
