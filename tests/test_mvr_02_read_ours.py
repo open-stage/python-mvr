@@ -46,8 +46,8 @@ def process_mvr_child_list(child_list, mvr_scene):
 
 def process_mvr_fixture(fixture):
     assert fixture.gdtf_spec == "LED PAR 64 RGBW.gdtf"
-    assert fixture.addresses.address[0].universe == 1
-    assert fixture.addresses.address[0].address == 1
+    assert fixture.addresses.addresses[0].universe == 1
+    assert fixture.addresses.addresses[0].address == 1
     assert fixture.gdtf_mode == "Default"
     assert fixture.matrix.matrix[3] == [5.0, 5.0, 5.0, 0]
 

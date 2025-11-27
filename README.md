@@ -54,6 +54,12 @@ for layer_index, layer in enumerate(mvr_file.scene.layers):
 
 ### Writing MVR
 
+> Validation notes
+> - Each object now enforces required children/fields when writing. Missing mandatory data will raise `ValueError`.
+> - For convenience, fixtures/truss/support/video/projector auto-fill missing IDs with minimal defaults (`FixtureID="0"`, `FixtureIDNumeric=0`, fixtures also set `UnitNumber=0`) when not a multipatch child.
+> - `Addresses` uses plural fields `addresses`/`networks` to align with the spec’s container semantics.
+> - Required nodes such as `Geometries`, `Source` inside `MappingDefinition`/`Projection`, and `Projections` on `Projector` must be present; empty `Sources`/`Projections` will raise.
+
 #### Load and Export an MVR
 
 ```python
@@ -67,10 +73,10 @@ mvr_read = pymvr.GeneralSceneDescription("mvr_file.mvr")
 mvr_writer = pymvr.GeneralSceneDescriptionWriter()
 
 # 3. Serialize the scene object into the writer's XML root
-mvr_read.scene.to_xml(parent=mvr_writer.xml_root)
+mvr_writer.serialize_scene(mvr_read.scene)
 
 # 4. Serialize the user_data object into the writer's XML root
-mvr_read.user_data.to_xml(parent=mvr_writer.xml_root)
+mvr_writer.serialize_user_data(mvr_read.user_data)
 
 # 5. Add necesarry files like GDTF fixtures, trusses, 3D objects and so on
 # Skipped in this example
@@ -111,7 +117,7 @@ fixture = pymvr.Fixture(name="Test Fixture")
 child_list.fixtures.append(fixture)
 
 # 3. Serialize the scene object into the writer's XML root
-scene_obj.to_xml(parent=mvr_writer.xml_root)
+mvr_writer.serialize_scene(scene_obj)
 
 # 4. Add any necessary files (like GDTF fixtures, trusses...) to the MVR archive
 #    The list should contain tuples of (file_path, GDTF_file_name)

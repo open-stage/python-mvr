@@ -75,7 +75,7 @@ def test_write_from_json():
                 gdtf_spec=fixture_data["gdtf_spec"],
                 gdtf_mode=fixture_data["gdtf_mode"],
                 fixture_id=fixture_data["fixture_id"],
-                addresses=pymvr.Addresses(address=new_addresses),
+                addresses=pymvr.Addresses(addresses=new_addresses),
             )
 
             child_list.fixtures.append(new_fixture)

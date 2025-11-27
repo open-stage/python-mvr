@@ -45,7 +45,7 @@ def test_read_write_round_trip(request, pymvr_module):
     with pymvr_module.GeneralSceneDescription(file_read_path) as mvr_read:
         mvr_writer = pymvr_module.GeneralSceneDescriptionWriter()
 
-        mvr_read.scene.to_xml(parent=mvr_writer.xml_root)
-        mvr_read.user_data.to_xml(parent=mvr_writer.xml_root)
+        mvr_writer.serialize_scene(mvr_read.scene)
+        mvr_writer.serialize_user_data(mvr_read.user_data)
 
         mvr_writer.write_mvr(file_write_path)

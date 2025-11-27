@@ -1,5 +1,13 @@
 ### Changelog
 
+### NEXT
+
+* Enforce required nodes/fields at write time in class `to_xml` (raises on missing required Source/Projections/Geometries unless auto-filled).
+* Auto-fill minimal IDs for non-multipatch fixtures/truss/support/video/projector when missing (`FixtureID="0"`, `FixtureIDNumeric=0`, fixtures also `UnitNumber=0`).
+* Preserve `UserData/Data` payload content (text/children) on round-trip.
+* Default `Gobo` rotation to `0.0` to avoid invalid `None` serialization.
+* Switch `Addresses` to plural fields (`addresses`/`networks`) to match spec semantics; remove singular access and update tests/docs.
+
 ### 1.0.4
 
 * Add test for MVR read-write round-trip
