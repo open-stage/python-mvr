@@ -56,7 +56,7 @@ for layer_index, layer in enumerate(mvr_file.scene.layers):
 
 > Validation notes
 > - Each object now enforces required children/fields when writing. Missing mandatory data will raise `ValueError`.
-> - For convenience, fixtures/truss/support/video/projector auto-fill missing IDs with minimal defaults (`FixtureID="0"`, `FixtureIDNumeric=0`, fixtures also set `UnitNumber=0`) when not a multipatch child.
+> - For convenience, fixtures/truss/support/video/projector auto-fill missing IDs with minimal defaults (`FixtureID="0"`, `FixtureIDNumeric=0`) when not a multipatch child.
 > - `Addresses` uses plural fields `addresses`/`networks` to align with the spec’s container semantics.
 > - Required nodes such as `Geometries`, `Source` inside `MappingDefinition`/`Projection`, and `Projections` on `Projector` must be present; empty `Sources`/`Projections` will raise.
 
