@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from copy import deepcopy
 from typing import List, Union, Optional, Tuple
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -80,7 +81,9 @@ class GeneralSceneDescription:
 class GeneralSceneDescriptionWriter:
     """Creates MVR zip archive with packed GeneralSceneDescription xml and other files"""
 
-    def __init__(self):
+    def __init__(
+        self,
+    ):
         self.version_major: str = "1"
         self.version_minor: str = "6"
         self.provider: str = "pymvr"
@@ -93,6 +96,13 @@ class GeneralSceneDescriptionWriter:
             provider=self.provider,
             providerVersion=self.provider_version,
         )
+
+    def serialize_scene(self, scene: "Scene"):
+        scene.to_xml(parent=self.xml_root)
+
+    def serialize_user_data(self, user_data: "UserData"):
+        if user_data:
+            user_data.to_xml(parent=self.xml_root)
 
     def write_mvr(self, path: Optional[str] = None):
         if path is not None:
@@ -381,32 +391,32 @@ class Network(BaseNode):
 class Addresses(BaseNode):
     def __init__(
         self,
-        address: Optional[List["Address"]] = None,
-        network: Optional[List["Network"]] = None,
+        addresses: Optional[List["Address"]] = None,
+        networks: Optional[List["Network"]] = None,
         xml_node: Optional["Element"] = None,
         *args,
         **kwargs,
     ):
-        self.address = address if address is not None else []
-        self.network = network if network is not None else []
+        self.addresses: List["Address"] = addresses if addresses is not None else []
+        self.networks: List["Network"] = networks if networks is not None else []
         super().__init__(xml_node, *args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
-        self.address = [Address(xml_node=i) for i in xml_node.findall("Address")]
-        self.network = [Network(xml_node=i) for i in xml_node.findall("Network")]
+        self.addresses = [Address(xml_node=i) for i in xml_node.findall("Address")]
+        self.networks = [Network(xml_node=i) for i in xml_node.findall("Network")]
 
     def to_xml(self, parent: Element) -> Optional[Element]:
-        if not self.address and not self.network:
+        if not self.addresses and not self.networks:
             return None
         element = ElementTree.SubElement(parent, "Addresses")
-        for dmx_address in self.address:
+        for dmx_address in self.addresses:
             dmx_address.to_xml(element)
-        for network_address in self.network:
+        for network_address in self.networks:
             network_address.to_xml(element)
         return element
 
     def __len__(self):
-        return len(self.address) + len(self.network)
+        return len(self.addresses) + len(self.networks)
 
 
 class BaseChildNode(BaseNode):
@@ -574,12 +584,10 @@ class BaseChildNode(BaseNode):
 
         if self.fixture_id is not None:
             ElementTree.SubElement(element, "FixtureID").text = str(self.fixture_id)
-
         if self.fixture_id_numeric is not None:
             ElementTree.SubElement(element, "FixtureIDNumeric").text = str(
                 self.fixture_id_numeric
             )
-
         if self.unit_number is not None:
             ElementTree.SubElement(element, "UnitNumber").text = str(self.unit_number)
         if self.custom_id_type is not None:
@@ -620,8 +628,11 @@ class BaseChildNodeExtended(BaseChildNode):
 
     def populate_xml(self, element: Element):
         super().populate_xml(element)
-        if self.geometries:
-            self.geometries.to_xml(element)
+        if self.geometries is None:
+            raise ValueError(
+                f"{type(self).__name__} '{self.name}' missing required Geometries"
+            )
+        self.geometries.to_xml(element)
 
 
 class Data(BaseNode):
@@ -634,6 +645,8 @@ class Data(BaseNode):
     ):
         self.provider = provider
         self.ver = ver
+        self.text: Optional[str] = None
+        self.extra_children: List[Element] = []
         super().__init__(*args, **kwargs)
 
     def _read_xml(self, xml_node: "Element"):
@@ -643,14 +656,20 @@ class Data(BaseNode):
         ver = xml_node.attrib.get("ver")
         if ver is not None:
             self.ver = ver
+        self.text = xml_node.text
+        self.extra_children = [deepcopy(child) for child in list(xml_node)]
 
     def __str__(self):
         return f"{self.provider} {self.ver}"
 
     def to_xml(self):
-        return ElementTree.Element(
+        element = ElementTree.Element(
             type(self).__name__, provider=self.provider, ver=self.ver
         )
+        element.text = self.text
+        for child in self.extra_children:
+            element.append(deepcopy(child))
+        return element
 
 
 class AUXData(BaseNode):
@@ -740,6 +759,8 @@ class MappingDefinition(BaseNode):
             self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
 
     def to_xml(self):
+        if self.source is None:
+            raise ValueError(f"MappingDefinition '{self.name}' missing required Source")
         element = ElementTree.Element(
             type(self).__name__, name=self.name, uuid=self.uuid
         )
@@ -832,6 +853,11 @@ class Fixture(BaseChildNode):
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
         element = ElementTree.Element(type(self).__name__, attributes)
+        if self.multipatch is None:
+            if self.fixture_id is None:
+                self.fixture_id = "0"
+            if self.fixture_id_numeric is None:
+                self.fixture_id_numeric = 0
         self.populate_xml(element)
 
         if self.focus:
@@ -1416,6 +1442,11 @@ class Truss(BaseChildNodeExtended):
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
         element = ElementTree.Element(type(self).__name__, attributes)
+        if self.multipatch is None:
+            if self.fixture_id is None:
+                self.fixture_id = "0"
+            if self.fixture_id_numeric is None:
+                self.fixture_id_numeric = 0
         self.populate_xml(element)
         if self.position:
             ElementTree.SubElement(element, "Position").text = self.position
@@ -1459,6 +1490,11 @@ class Support(BaseChildNodeExtended):
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
         element = ElementTree.Element(type(self).__name__, attributes)
+        if self.multipatch is None:
+            if self.fixture_id is None:
+                self.fixture_id = "0"
+            if self.fixture_id_numeric is None:
+                self.fixture_id_numeric = 0
         self.populate_xml(element)
 
         if self.position:
@@ -1499,6 +1535,11 @@ class VideoScreen(BaseChildNodeExtended):
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
         element = ElementTree.Element(type(self).__name__, attributes)
+        if self.multipatch is None:
+            if self.fixture_id is None:
+                self.fixture_id = "0"
+            if self.fixture_id_numeric is None:
+                self.fixture_id_numeric = 0
         self.populate_xml(element)
 
         if self.sources:
@@ -1530,10 +1571,17 @@ class Projector(BaseChildNodeExtended):
         if self.multipatch:
             attributes["multipatch"] = self.multipatch
         element = ElementTree.Element(type(self).__name__, attributes)
+        if self.multipatch is None:
+            if self.fixture_id is None:
+                self.fixture_id = "0"
+            if self.fixture_id_numeric is None:
+                self.fixture_id_numeric = 0
         self.populate_xml(element)
 
         if self.projections:
             self.projections.to_xml(element)
+        else:
+            raise ValueError(f"Projector '{self.name}' missing Projections")
 
         return element
 
@@ -1749,7 +1797,7 @@ class Gobo(BaseNode):
         *args,
         **kwargs,
     ):
-        self.rotation = rotation
+        self.rotation = 0.0 if rotation is None else rotation
         self.filename = filename
         super().__init__(xml_node, *args, **kwargs)
 
@@ -1814,9 +1862,10 @@ class Projection(BaseNode):
             self.scale_handling = ScaleHandeling(xml_node=scale_handling_node)
 
     def to_xml(self):
+        if self.source is None:
+            raise ValueError("Projection missing required Source")
         element = ElementTree.Element(type(self).__name__)
-        if self.source:
-            element.append(self.source.to_xml())
+        element.append(self.source.to_xml())
         if self.scale_handling:
             self.scale_handling.to_xml(element)
         return element
@@ -1840,6 +1889,8 @@ class Projections(BaseNode):
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
+        if len(self.projections) == 0:
+            raise ValueError("Projections missing Projection entries")
         for projection in self.projections:
             element.append(projection.to_xml())
         return element
@@ -1895,6 +1946,8 @@ class Sources(BaseNode):
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
+        if len(self.sources) == 0:
+            raise ValueError("Sources missing Source entries")
         for source in self.sources:
             element.append(source.to_xml())
         return element
