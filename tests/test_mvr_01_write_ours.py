@@ -22,9 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pytest
-from pathlib import Path
 import pymvr
+import pytest
 
 
 def process_mvr_child_list(child_list, mvr_scene):
@@ -46,11 +45,11 @@ def process_mvr_child_list(child_list, mvr_scene):
 
 
 @pytest.mark.parametrize("mvr_scene", [("basic_fixture.mvr",)], indirect=True)
-def test_write_mvr_file(mvr_scene):
+def test_write_mvr_file(mvr_scene, tmp_path):
     mvr = pymvr.GeneralSceneDescriptionWriter()
     mvr_scene.scene.to_xml(mvr.xml_root)
     mvr_scene.user_data.to_xml(mvr.xml_root)
     # TODO: add back file iteration to include gdtf files in the zip file
 
-    test_file_path = Path(Path(__file__).parent, "test.mvr")
+    test_file_path = tmp_path / "test.mvr"
     mvr.write_mvr(test_file_path)

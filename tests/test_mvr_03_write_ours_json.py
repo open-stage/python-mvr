@@ -22,11 +22,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pathlib import Path
 import pymvr
 
 
-def test_write_from_json():
+def test_write_from_json(tmp_path):
     # TODO: add some assertions
     data = [
         {
@@ -83,5 +82,5 @@ def test_write_from_json():
 
     scene = pymvr.Scene(layers=layers)
     scene.to_xml(mvr.xml_root)
-    test_file_path = Path(Path(__file__).parent, "test_json.mvr")
+    test_file_path = tmp_path / "test_json.mvr"
     mvr.write_mvr(test_file_path)
