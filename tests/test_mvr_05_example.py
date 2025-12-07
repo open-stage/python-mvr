@@ -22,11 +22,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pathlib import Path
 import pymvr
 
 
-def test_write_example_mvr_file():
+def test_write_example_mvr_file(tmp_path):
     fixtures_list = []
     mvr = pymvr.GeneralSceneDescriptionWriter()
 
@@ -46,5 +45,5 @@ def test_write_example_mvr_file():
     scene.to_xml(parent=mvr.xml_root)
 
     mvr.files_list = list(set(fixtures_list))
-    test_file_path = Path(Path(__file__).parent, "example.mvr")
+    test_file_path = tmp_path / "example.mvr"
     mvr.write_mvr(test_file_path)
