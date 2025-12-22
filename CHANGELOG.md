@@ -1,5 +1,10 @@
 ### Changelog
 
+### 1.0.6
+
+* Matrix class is no longer scaling objects down/up (it should never have done
+  that). You must ensure scaling in the consumer code from now on.
+
 ### 1.0.5
 
 * Breaking: Switch `Addresses` to plural fields (`addresses`/`networks`) to match spec semantics; remove singular access and update tests/docs.

@@ -106,12 +106,8 @@ class Matrix:
                 [component[0], component[1], component[2], 0],
                 [component[3], component[4], component[5], 0],
                 [component[6], component[7], component[8], 0],
-                [component[9] * 0.001, component[10] * 0.001, component[11] * 0.001, 0],
+                [component[9], component[10], component[11], 0],
             ]
-            # TODO: the matrix down-scaling should not be done here but in the consumer, based on scaling settings and so on
-            # same below, where we up-scale it again as mere re-processing via pymvr will cause loss of precision
-            # another option is to have a global settings for the GeneralSceneDescription but we then must pass the GSD class
-            # down through the hierarchy all the way to the Matrix class
 
     def __eq__(self, other):
         return self.matrix == other.matrix
@@ -127,7 +123,7 @@ class Matrix:
 
     def to_xml(self, parent):
         u, v, w, x = self.matrix
-        matrix_str = f"{{{u[0]},{u[1]},{u[2]}}}{{{v[0]},{v[1]},{v[2]}}}{{{w[0]},{w[1]},{w[2]}}}{{{x[0] / 0.001},{x[1] / 0.001},{x[2] / 0.001}}}"
+        matrix_str = f"{{{u[0]},{u[1]},{u[2]}}}{{{v[0]},{v[1]},{v[2]}}}{{{w[0]},{w[1]},{w[2]}}}{{{x[0]},{x[1]},{x[2]}}}"
         matrix = ElementTree.SubElement(parent, type(self).__name__)
         matrix.text = matrix_str
 
