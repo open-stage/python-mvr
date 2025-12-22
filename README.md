@@ -190,7 +190,7 @@ please cite it as follows:
   title        = {pyMVR: Python Library for My Virtual Rig},
   author       = {{OpenStage}},
   year         = {2025},
-  version      = {1.0.1},
+  version      = {1.0.6},
   url          = {https://github.com/open-stage/python-mvr}
 }
 ```
