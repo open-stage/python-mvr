@@ -46,7 +46,12 @@ def mvr_scene(request, tmp_path):
             gdtf_mode="Default",
             addresses=addresses,
             matrix=pymvr.Matrix(
-                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [5.0, 5.0, 5.0, 0]]
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [5000.0, 5000.0, 5000.0, 0],
+                ]
             ),
         )
         layer = pymvr.Layer(
