@@ -49,7 +49,7 @@ def process_mvr_fixture(fixture):
     assert fixture.addresses.addresses[0].universe == 1
     assert fixture.addresses.addresses[0].address == 1
     assert fixture.gdtf_mode == "Default"
-    assert fixture.matrix.matrix[3] == [5.0, 5.0, 5.0, 0]
+    assert fixture.matrix.matrix[3] == [5000.0, 5000.0, 5000.0, 0]
 
 
 @pytest.mark.parametrize("mvr_scene", [("test.mvr",)], indirect=True)
