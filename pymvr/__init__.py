@@ -1542,7 +1542,7 @@ class VideoScreen(BaseChildNodeExtended):
                 self.fixture_id_numeric = 0
         self.populate_xml(element)
 
-        if self.sources:
+        if self.sources and len(self.sources) > 0:
             self.sources.to_xml(element)
         if self.function_:
             ElementTree.SubElement(element, "Function").text = self.function_
@@ -1578,10 +1578,11 @@ class Projector(BaseChildNodeExtended):
                 self.fixture_id_numeric = 0
         self.populate_xml(element)
 
-        if self.projections:
+        if self.projections and len(self.projections) > 0:
             self.projections.to_xml(element)
         else:
-            raise ValueError(f"Projector '{self.name}' missing Projections")
+            if self.projections is None:
+                raise ValueError(f"Projector '{self.name}' missing Projections")
 
         return element
 
@@ -1895,6 +1896,9 @@ class Projections(BaseNode):
             element.append(projection.to_xml())
         return element
 
+    def __len__(self):
+        return len(self.projections)
+
 
 class Source(BaseNode):
     def __init__(
@@ -1946,8 +1950,9 @@ class Sources(BaseNode):
 
     def to_xml(self, parent: Element):
         element = ElementTree.SubElement(parent, type(self).__name__)
-        if len(self.sources) == 0:
-            raise ValueError("Sources missing Source entries")
         for source in self.sources:
             element.append(source.to_xml())
         return element
+
+    def __len__(self):
+        return len(self.sources)
