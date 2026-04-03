@@ -1,5 +1,10 @@
 ### Changelog
 
+### 1.0.7
+
+* Handle empty self-closed container tags on export
+* Improve tests
+
 ### 1.0.6
 
 * Matrix class is no longer scaling objects down/up (it should never have done
