@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) 2025 vanous
+# Copyright (C) 2025 tison, vanous
 #
 # This file is part of pymvr.
 #
@@ -22,17 +22,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-headerPath = "mit-header.txt"
+[header]
+path = "mit-header.txt"
 
+[files]
 excludes = [
-    ".github/",
+    ".github/**",
+    "**/*.md",
+    ".gitignore",
+    "LICENSE",
+    "tests/**/*.mvr",
 ]
 
 [git]
-attrs = 'auto'
+file_attrs = 'auto'
 ignore = 'auto'
 
-[properties]
-inceptionYear = 2023
-projectName = "pymvr"
-
+[props]
+inception_year = 2023
+project_name = "pymvr"
