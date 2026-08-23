@@ -46,10 +46,11 @@ pip install pymvr
 
 ```python
 import pymvr
+
 mvr_file = pymvr.GeneralSceneDescription("mvr_file.mvr")
 
 for layer_index, layer in enumerate(mvr_file.scene.layers):
-    ... #process data
+    ...  # process data
 ```
 
 ### Writing MVR
